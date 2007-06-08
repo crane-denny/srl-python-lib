@@ -1,6 +1,6 @@
 """ Test the signal module. """
-from simula.testing import *
-from simula.signal import *
+from srllib.testing import *
+from srllib.signal import *
 
 class _Slot:
     def __call__(self):

@@ -18,7 +18,7 @@
 """ Unit testing functionality. """
 import unittest, os.path, sys, shutil, tempfile
 
-import mock, simula.util
+import mock, srllib.util
 
 # This flag makes unittest omit our test methods in failure tracebacks, like the standard test methods.
 __unittest = True
@@ -181,12 +181,12 @@ class TestCase(unittest.TestCase):
         return ret
 
     def _getTempFname(self, *args, **kwds):
-        ftemp = simula.util.createTemporaryFile(*args, **kwds)
+        ftemp = srllib.util.createTemporaryFile(*args, **kwds)
         self.__tempFiles.append(ftemp)
         return ftemp
 
     def _getTempFile(self, *args, **kwds):
-        ftemp = simula.util.createTemporaryFile(close=False, *args, **kwds)
+        ftemp = srllib.util.createTemporaryFile(close=False, *args, **kwds)
         self.__tempFiles.append(ftemp)
         return ftemp
 
@@ -394,8 +394,8 @@ def runTests(packageName, gui=False, ignore=[]):
     import optparse, nose
 
     if gui:
-        import gui, simula.qtgui
-        gui.GuiTestCase.QApplicationClass = simula.qtgui.Application
+        import gui, srllib.qtgui
+        gui.GuiTestCase.QApplicationClass = srllib.qtgui.Application
     try:
         r = nose.run()
     finally:

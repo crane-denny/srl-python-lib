@@ -19,7 +19,7 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 
-from simula.testing import *
+from srllib.testing import *
 
 class WidgetController(object):
     def __init__(self, app):

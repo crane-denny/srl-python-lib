@@ -1,8 +1,8 @@
 """ Test the util module. """
 import os.path, stat
 
-from simula.testing import *
-from simula import util
+from srllib.testing import *
+from srllib import util
 
 class FileSystemTest(TestCase):
     """ Test filesystem utility functions. """

@@ -1,1 +1,3 @@
 .*\.py[co]
+Docs/Epydoc
+.+.sw.

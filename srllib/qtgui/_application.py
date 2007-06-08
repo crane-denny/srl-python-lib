@@ -4,7 +4,7 @@ import sys, traceback, signal, Queue
 from PyQt4.QtGui import *
 from PyQt4.QtCore import QEvent, QTimer, QObject, SIGNAL
 
-from simula.signal import Signal
+from srllib.signal import Signal
 from _common import *
 
 __all__ = ["Application"]
@@ -23,8 +23,8 @@ class Application(QApplication):
     @cvar theApp: The L{application<Application>} object, if instantiated (otherwise None).
     @ivar sigException: Emitted when detecting an unhandled exception.
     """
-    import simula.signal
-    sigQuitting = simula.signal.Signal()
+    import srllib.signal
+    sigQuitting = srllib.signal.Signal()
     theApp = None
 
     def __init__(self, argv=sys.argv, catchExceptions=True):
@@ -118,9 +118,9 @@ class Application(QApplication):
             self.sigException(exc, value, tb)
 
             self.__timer.stop()
-            import simula.threading
+            import srllib.threading
             thrdSpecific = ""
-            if exc is simula.threading.ThreadError:
+            if exc is srllib.threading.ThreadError:
                 thrdSpecific = " in thread %s" % (value.thread,)
                 exc, value, tb = value.excType, value.exc, value.tb
                 
