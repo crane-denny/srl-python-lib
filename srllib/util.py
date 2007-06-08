@@ -5,13 +5,24 @@ except ImportError: import sha
 
 from error import *
 
-def noOp(*args, **kwds):
+def no_op(*args, **kwds):
     """ Utility no-op function that accepts any arguments/keywords. """
     pass
 
 Checksum_Hex, Checksum_Binary = 0, 1
 
-def getChecksum(path, format=Checksum_Hex):
+def _make_decorator(func):
+    """ Wrap a test decorator to replicate metadata of the decorated function.
+    """
+    def decorate(decorated):
+        decorated.name = func.__name__
+        decorated.__dict__ = func.__dict__
+        decorated.__doc__ = func.__doc__
+        decorated.__module__ = func.__module__
+        return decorated
+    return decorate
+
+def get_checksum(path, format=Checksum_Hex):
     """ Obtain the sha1 checksum of a file or directory.
 
     If path points to a directory, a collective checksum is calculated recursively for all files
@@ -42,7 +53,7 @@ def getChecksum(path, format=Checksum_Hex):
         shaMthd = shaObj.digest
     
     if os.path.isdir(path):
-        for dpath, dnames, fnames in walkDir(path):
+        for dpath, dnames, fnames in walkdir(path):
             for fname in fnames:
                 performSha1(os.path.join(dpath, fname), shaObj)
     else:
@@ -50,7 +61,7 @@ def getChecksum(path, format=Checksum_Hex):
 
     return shaMthd()
 
-def getModule(name, path):
+def get_module(name, path):
     """ Search for a module along a given path and load it.
     @param name: Module name.
     @param path: Path of directories to search.
@@ -65,27 +76,28 @@ def getModule(name, path):
 
 #{ Filesystem utilities
 
-def replaceRoot(path, newRoot, origRoot=None):
+def replace_root(path, new_root, orig_root=None):
     """ Replace one root directory component of a pathname with another.
     @param path: The pathname.
-    @param newRoot: The root to replace the old root component with.
-    @param origRoot: The original root component to replace, if None the filesystem root.
+    @param new_root: The root to replace the old root component with.
+    @param orig_root: The original root component to replace, if None the filesystem root.
     @return: The new pathname.
     """
-    if origRoot is None:
+    if orig_root is None:
         if Os in Posix:
-            origRoot = "/"
+            orig_root = "/"
         elif Os in Windows:
-            origRoot = path.split(os.path.sep, 1)[0] + os.path.sep
+            orig_root = path.split(os.path.sep, 1)[0] + os.path.sep
     else:
-        origRoot = os.path.normpath(origRoot)
-        origRoot += os.path.sep
-    relPath = path[len(origRoot):]
-    return os.path.join(newRoot, relPath)
+        orig_root = os.path.normpath(orig_root)
+        orig_root += os.path.sep
+    relPath = path[len(orig_root):]
+    return os.path.join(new_root, relPath)
 
-def _raisePermissions(func):
+def _raise_permissions(func):
     """ Raise PermissionsError upon filesystem access error. """
     def wrapper(*args, **kwds):
+        print "Wrapper invoked"
         try: return func(*args, **kwds)
         except EnvironmentError, err:
             if err.errno == errno.EACCES:
@@ -95,11 +107,11 @@ def _raisePermissions(func):
 
     return wrapper
 
-class DirNotEmpty(SimulaError):
+class DirNotEmpty(SrlError):
     pass
 
-@_raisePermissions
-def removeDir(path, ignoreErrors=False, force=False, recurse=True):
+@_raise_permissions
+def remove_dir(path, ignoreErrors=False, force=False, recurse=True):
     """ Remove directory, optionally a whole directory tree (recursively).
     
     @param ignoreErrors: Ignore failed deletions?
@@ -111,7 +123,7 @@ def removeDir(path, ignoreErrors=False, force=False, recurse=True):
     def rmdir(path):
         if force and platform.system() == "Windows":
             # On POSIX, it is the permissions of the containing directory that matters when deleting
-            mode = getFilePermissions(path)
+            mode = get_file_permissions(path)
             if not mode & stat.S_IWRITE:
                 mode |= stat.S_IWRITE
             chmod(path, mode)
@@ -125,23 +137,21 @@ def removeDir(path, ignoreErrors=False, force=False, recurse=True):
             for d in dnames:
                 rmdir(os.path.join(dpath, d))
             for f in fnames:
-                removeFile(os.path.join(dpath, f), force=force)
+                remove_file(os.path.join(dpath, f), force=force)
     else:
         if os.listdir(path):
             raise DirNotEmpty
     rmdir(path)
 
-rmtree = removeDir  # Backwards-compat
-
-def getFilePermissions(path):
+def get_file_permissions(path):
     """ Get permissions flags (bitwise) for a file/directory.
     
     Links are not dereferenced.
     """
     return stat.S_IMODE(os.lstat(path).st_mode)
 
-@_raisePermissions
-def moveFile(src, dest, force=False):
+@_raise_permissions
+def move_file(src, dest, force=False):
     """ Move a file, cross-platform safe.
 
     This a simple convenience wrapper, for handling snags that may arise on different
@@ -151,17 +161,17 @@ def moveFile(src, dest, force=False):
     if platform.system() == "Windows" and os.path.isfile(dest):
         # Necessary on Windows
         if force:
-            dstMode = getFilePermissions(dst)
+            dstMode = get_file_permissions(dst)
             if not dstMode & stat.S_IWRITE:
                 chmod(dest, dstMode | stat.S_IWRITE)
         os.remove(dest)
     shutil.move(src, dest)
 
-def cleanPath(path):
+def clean_path(path):
     """ Return a clean, absolute path. """
     return os.path.abspath(os.path.normpath(path))
 
-def walkDir(path):
+def walkdir(path):
     """ Wrapper around os.walk which checks whether we are permitted to traverse.
     @raise PermissionsError: Missing permission to traverse directory.
     """
@@ -173,8 +183,8 @@ def walkDir(path):
                 raise PermissionsError(os.path.join(dpath, d))
         yield dpath, dnames, fnames
 
-@_raisePermissions
-def _copyFile(srcPath, dstPath, callback, totalBytes=None, readSoFar=long(0)):
+@_raise_permissions
+def _copy_file(srcPath, dstPath, callback, totalBytes=None, readSoFar=long(0)):
     st = os.lstat(srcPath)
     sz = float(st.st_size)
     if totalBytes is None:
@@ -202,31 +212,31 @@ def _copyFile(srcPath, dstPath, callback, totalBytes=None, readSoFar=long(0)):
     shutil.copystat(srcPath, dstPath)
     return readSoFar
 
-class PermissionsError(SimulaError):
+class PermissionsError(SrlError):
     """ Filesystem permissions error.
     @ivar reason: Original reason for error.
     """
     def __init__(self, path, reason=None):
-        SimulaError.__init__(self, path)
+        SrlError.__init__(self, path)
         self.reason = reason
 
-def copyFile(sourcePath, destPath, callback=noOp):
+def copy_file(sourcePath, destPath, callback=no_op):
     """ Copy a file.
     @param sourcePath: Source file path.
     @param destPath: Destination file path.
     @param callback: Optional callback to be invoked periodically with progress status.
     raise PermissionsError: Missing filesystem permissions.
     """
-    _copyFile(sourcePath, destPath, callback)
+    _copy_file(sourcePath, destPath, callback)
 
-@_raisePermissions
-def removeFile(path, force=False):
+@_raise_permissions
+def remove_file(path, force=False):
     """ Remove a file.
     @raise PermissionsError: Missing file-permissions.
     """
     os.remove(path)
 
-def removeFileOrDir(path, force=False, recurse=True):
+def remove_file_or_dir(path, force=False, recurse=True):
     """ Remove a filesystem object, whether it is a file or a directory.
     @param force: On Windows, force deletion of read-only files?
     @param recurse: Delete recursively, if a directory?
@@ -234,15 +244,15 @@ def removeFileOrDir(path, force=False, recurse=True):
     @raise DirNotEmpty: Directory was not empty, and recurse was not specified.
     """
     if os.path.isdir(path):
-        removeDir(path, force=force, recurse=recurse)
+        remove_dir(path, force=force, recurse=recurse)
     else:
-        removeFile(path, force=force)
+        remove_file(path, force=force)
 
-class DestinationExists(SimulaError):
+class DestinationExists(SrlError):
     pass
 
-@_raisePermissions
-def copyDir(sourceDir, destDir, callback=noOp, ignore=[], force=False):
+@_raise_permissions
+def copy_dir(sourceDir, destDir, callback=no_op, ignore=[], force=False):
     """ Copy a directory and its contents.
     @param sourceDir: Source directory.
     @param destDir: Destination directory.
@@ -256,7 +266,7 @@ def copyDir(sourceDir, destDir, callback=noOp, ignore=[], force=False):
     if os.path.exists(destDir):
         if not force:
             raise DestinationExists(destDir)
-        removeFileOrDir(destDir)
+        remove_file_or_dir(destDir)
 
     def filter(names):
         """ Filter list of filesystem names in-place. When using os.walk, directories removed
@@ -273,7 +283,7 @@ def copyDir(sourceDir, destDir, callback=noOp, ignore=[], force=False):
         shutil.copystat(sourceDir, destDir)
     numFiles = 0
     allBytes = 0
-    for dpath, dnames, fnames in walkDir(sourceDir):
+    for dpath, dnames, fnames in walkdir(sourceDir):
         for d in filter(dnames):
             allBytes += 1
         for f in filter(fnames):
@@ -285,10 +295,10 @@ def copyDir(sourceDir, destDir, callback=noOp, ignore=[], force=False):
     allBytes = float(allBytes)
     # Use a long to make sure it can hold a long enough number
     readSoFar = long(0)
-    for dpath, dnames, fnames in walkDir(sourceDir):
+    for dpath, dnames, fnames in walkdir(sourceDir):
         for d in filter(dnames):
             srcPath = os.path.join(dpath, d)
-            dstPath = replaceRoot(srcPath, destDir, sourceDir)
+            dstPath = replace_root(srcPath, destDir, sourceDir)
             os.mkdir(dstPath)
             if platform.system() != "Windows":
                 # Won't work on Windows
@@ -297,10 +307,10 @@ def copyDir(sourceDir, destDir, callback=noOp, ignore=[], force=False):
             callback(readSoFar / allBytes * 100)
         for f in filter(fnames):
             srcPath = os.path.join(dpath, f)
-            dstPath = replaceRoot(srcPath, destDir, sourceDir)
-            readSoFar = _copyFile(srcPath, dstPath, callback, allBytes, readSoFar)
+            dstPath = replace_root(srcPath, destDir, sourceDir)
+            readSoFar = _copy_file(srcPath, dstPath, callback, allBytes, readSoFar)
 
-def createTemporaryFile(suffix="", prefix="tmp", close=True):
+def create_tempfile(suffix="", prefix="tmp", close=True):
     """ Create temporary file.
     @param suffix: Optional filename suffix.
     @param prefix: Optional filename prefix.
@@ -315,7 +325,7 @@ def createTemporaryFile(suffix="", prefix="tmp", close=True):
     f = file(fname, "wb+")
     return f
 
-def createFile(name, content="", binary=False):
+def create_file(name, content="", binary=False):
     """ Create a file, with optional content.
     @param name: Filename.
     @param content: Optional content to write to file.
@@ -337,7 +347,7 @@ def createFile(name, content="", binary=False):
 def _sig(st):
     return (stat.S_IFMT(st.st_mode), st.st_size, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid)
 
-def compareDirs(dir0, dir1, shallow=True, ignore=[], fileCheckFunc=None):
+def compare_dirs(dir0, dir1, shallow=True, ignore=[], fileCheckFunc=None):
     """ Check that the contents of two directories match.
 
     Contents that mismatch and content that can't be found in one directory or can't be checked somehow are returned
@@ -348,7 +358,7 @@ def compareDirs(dir0, dir1, shallow=True, ignore=[], fileCheckFunc=None):
     @return: Pair of mismatched and failed pathnames, respectively
     """
     def checkFiles(file0, file1):
-        return getChecksum(file0, format=Checksum_Binary) == getChecksum(file1, format=Checksum_Binary)
+        return get_checksum(file0, format=Checksum_Binary) == get_checksum(file1, format=Checksum_Binary)
 
     if fileCheckFunc is None:
         fileCheckFunc = checkFiles
@@ -363,7 +373,7 @@ def compareDirs(dir0, dir1, shallow=True, ignore=[], fileCheckFunc=None):
     
     if dir0[-1] != os.path.sep:
         dir0 = dir0 + os.path.sep
-    for dpath, dnames, fnames in walkDir(dir0):
+    for dpath, dnames, fnames in walkdir(dir0):
         for ign in ignore:
             while ign in dnames:
                 dnames.remove(ign)
@@ -397,8 +407,8 @@ def compareDirs(dir0, dir1, shallow=True, ignore=[], fileCheckFunc=None):
                         mismatched = True
                         shutil.copytree(dir0, "/tmp/mismatch")
                     elif not shallow:
-                        chksum0, chksum1 = getChecksum(path0), getChecksum(path1)
-                        mismatched = getChecksum(path0) != getChecksum(path1)
+                        chksum0, chksum1 = get_checksum(path0), get_checksum(path1)
+                        mismatched = get_checksum(path0) != get_checksum(path1)
                         if mismatched:
                             sys.stderr.write("%s mismatched against %s because %s != %s\n" % (path0, path1, chksum0, chksum1))
                 else:
@@ -417,7 +427,7 @@ def compareDirs(dir0, dir1, shallow=True, ignore=[], fileCheckFunc=None):
 
     return mismatch, error
 
-@_raisePermissions
+@_raise_permissions
 def chmod(path, mode, recursive=False):
     """ Wrapper around os.chmod, which allows for recursive modification of a directory.
     @param path: Path to modify.
@@ -437,7 +447,7 @@ def chmod(path, mode, recursive=False):
         os.chmod(path, newMode)
 
     if recursive and os.path.isdir(path):
-        for dpath, dnames, fnames in walkDir(path):
+        for dpath, dnames, fnames in walkdir(path):
             _chmod(dpath, fixExec=True)
 
             for d in dnames[:]:

@@ -1,5 +1,5 @@
-# Part of Simula Python Components
-# Copyright (c) 2007 Simula Research Laboratory
+# Part of Srl Python Components
+# Copyright (c) 2007 Srl Research Laboratory
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software
 # and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -29,7 +29,7 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         # from conduit import mythreading
-        # mythreading.registerExceptionHandler(self._exceptionHandler)
+        # mythreading.registerExceptionHandler(self._exception_handler)
         self.__connections, self._origAttrs, self.__tempFiles, self.__tempDirs = [], {}, [], []
 
     def tearDown(self):
@@ -126,7 +126,7 @@ class TestCase(unittest.TestCase):
             self._origAttrs[(obj, attr)] = getattr(obj, attr)
         setattr(obj, attr, val)
 
-    def _setModuleAttr(self, mdl, attr, val):
+    def _set_module_attr(self, mdl, attr, val):
         """ Change the attribute of a module.
         
         The original attribute of the module is recorded, so that it can be restored after the test.
@@ -145,11 +145,11 @@ class TestCase(unittest.TestCase):
 
         self._setAttr(m, attr, val)
 
-    def _restoreAttr(self, obj, attr):
+    def _restore_attr(self, obj, attr):
         val = self._origAttrs.pop((obj, attr))
         setattr(obj, attr, val)
 
-    def _restoreModuleAttr(self, mdl, attr):
+    def _restore_module_attr(self, mdl, attr):
         if isinstance(mdl, basestring):
             try:
                 fromList = [mdl.rsplit(".", 1)[1]]
@@ -158,15 +158,15 @@ class TestCase(unittest.TestCase):
             m = __import__(mdl, None, None, fromList)
         else:
             m = mdl
-        self._restoreAttr(m, attr)
+        self._restore_attr(m, attr)
     
-    def _exceptionHandler(self, exception):
+    def _exception_handler(self, exception):
         raise exception
 
-    def _getDataPath(self, relPath):
+    def _get_datapath(self, relPath):
         return os.path.join("Data", relPath)
 
-    def _getBinDataPath(self, relPath):
+    def _get_bindatapath(self, relPath):
         if relPath.count(os.path.sep) > 1:
             parDir, remaining = relPath.split(os.path.sep, 1)
         else:
@@ -180,17 +180,17 @@ class TestCase(unittest.TestCase):
         ret = os.path.join("Data", parDir, remaining)
         return ret
 
-    def _getTempFname(self, *args, **kwds):
-        ftemp = srllib.util.createTemporaryFile(*args, **kwds)
+    def _get_tempfname(self, *args, **kwds):
+        ftemp = srllib.util.create_tempfile(*args, **kwds)
         self.__tempFiles.append(ftemp)
         return ftemp
 
-    def _getTempFile(self, *args, **kwds):
-        ftemp = srllib.util.createTemporaryFile(close=False, *args, **kwds)
+    def _get_tempfile(self, *args, **kwds):
+        ftemp = srllib.util.create_tempfile(close=False, *args, **kwds)
         self.__tempFiles.append(ftemp)
         return ftemp
 
-    def _getTempDir(self, *args, **kwds):
+    def _get_tempdir(self, *args, **kwds):
         """ Create temporary directory that is removed on tearDown. """
         dtemp = tempfile.mkdtemp(*args, **kwds)
         self.__tempDirs.append(dtemp)
@@ -204,7 +204,7 @@ import stat
 def _sig(st):
     return (stat.S_IFMT(st.st_mode), st.st_size, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid)
 
-def compareDirs(dir0, dir1, shallow=True, ignore=[]):
+def compare_dirs(dir0, dir1, shallow=True, ignore=[]):
     """ Check that the contents of two directories match.
 
     Contents that mismatch and content that can't be found in one directory or can't be checked somehow are returned
@@ -277,7 +277,7 @@ def compareDirs(dir0, dir1, shallow=True, ignore=[]):
 
     return mismatch, error
 
-def _getTests(specified):
+def _get_tests(specified):
     specificTests = [t for t in specified.split(",") if t]
     from glob import glob
     if not specified:
@@ -333,11 +333,11 @@ def _analyzePkg(pkg, rslts, ignore):
                 # Recurse over sub-package
                 _analyzePkg(m, rslts, ignore)
 
-def _analyzeCoverage(packageName, tests, infer, ignore):
+def _analyzeCoverage(package_name, tests, infer, ignore):
     """ Analyze code coverage by tests. """
     rslts = {}
     if not infer:
-        pkg = __import__(packageName)
+        pkg = __import__(package_name)
         _analyzePkg(pkg, rslts, ignore)
     else:
         for t in tests:
@@ -363,7 +363,7 @@ def _analyzeCoverage(packageName, tests, infer, ignore):
                     mname = fullMname.rsplit(".", 1)[1]
                 else:
                     mname = fullMname
-                m = __import__("%s.%s" % (packageName, fullMname), globals(), locals(), [mname])
+                m = __import__("%s.%s" % (package_name, fullMname), globals(), locals(), [mname])
                 f, s, i, n, h = coverage.analysis2(m)
                 rslts[fullMname] = (s, n, h)
 
@@ -383,21 +383,31 @@ def _error(msg):
     sys.stderr.write("%s\n" % msg)
     sys.exit(1)
 
-def runTests(packageName, gui=False, ignore=[]):
+def run_tests(package_name, gui=False, ignore=[]):
     """ Use L{nose} for discovering/running tests.
 
     After finishing, sys.exit is called with the success status.
-    @param packageName: Name of package that is tested. Used for analyzing coverage by tests.
+    @param package_name: Name of package that is tested. Used for analyzing coverage by tests.
     @param gui: Do the tests involve GUI code?
     @param ignore: Modules to ignore when analyzing coverage.
     """
-    import optparse, nose
+    import optparse, nose, nose.core
 
     if gui:
         import gui, srllib.qtgui
         gui.GuiTestCase.QApplicationClass = srllib.qtgui.Application
+    sys.argv.append("--cover-package=%s" % (package_name,))
+    # Can't find a better way to make nose ignore this function :(
+    sys.argv.append("--exclude=%s" % ("run_tests",))
+
+    class TestCollector(nose.core.TestCollector):
+        def loadtests(self):
+            for t in self.loader.loadTestsFromDir(os.getcwd()):
+                print "Yielding %s" % t
+                yield t
+
     try:
-        r = nose.run()
+        r = nose.run(defaultTest=TestCollector)
     finally:
         '''
         if gui:

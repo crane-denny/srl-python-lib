@@ -1,5 +1,5 @@
-# Part of Simula Python Components
-# Copyright (c) 2007 Simula Research Laboratory
+# Part of Srl Python Components
+# Copyright (c) 2007 Srl Research Laboratory
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software
 # and associated documentation files (the "Software"), to deal in the Software without restriction,

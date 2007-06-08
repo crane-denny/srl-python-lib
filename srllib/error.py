@@ -1,3 +1,3 @@
 """ Exception classes. """
-class SimulaError(Exception):
-    """ Base Simula exception. """
+class SrlError(Exception):
+    """ Base SRL exception. """

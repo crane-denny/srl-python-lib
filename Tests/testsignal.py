@@ -45,12 +45,12 @@ class SignalTest(TestCase):
     def testDisconnectAllSignals(self):
         """ Test disconnecting from all signals. """
         sig0, sig1 = self.__getSignal(), self.__getSignal()
-        Signal.disconnectAllSignals(self)
+        Signal.disconnect_all_signals(self)
         sig0()
         sig1()
         self.assertNot(self.__emitted)
         # This shouldn't be an error
-        Signal.disconnectAllSignals(self)
+        Signal.disconnect_all_signals(self)
 
     ''' Can't seem to make this work (force gc)
     def testDeadSlot(self):

@@ -1,26 +1,9 @@
-# Part of Simula Python Components
-# Copyright (c) 2007 Simula Research Laboratory
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-# and associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-# NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-# OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """ Signals/slots functionality. """
 import types, weakref
 
 from error import *
 
-class _DeadReference(SimulaError):
+class _DeadReference(SrlError):
     pass
 
 class _FunctionProxy(object):
@@ -45,7 +28,7 @@ class _FunctionProxy(object):
             raise _DeadReference
         return func
 
-class CallFailure(SimulaError):
+class CallFailure(SrlError):
     """ Failure to call slot. """
 
 class _MethodProxy(object):
@@ -53,7 +36,7 @@ class _MethodProxy(object):
         self._instanceRef, self._mthdRef = weakref.ref(mthd.im_self), weakref.ref(mthd.im_func)
 
     def __call__(self, *args, **kwds):
-        instance, mthd = self._getRefs()
+        instance, mthd = self._get_refs()
         try: mthd(instance, *args, **kwds)
         except TypeError, err:
             raise CallFailure("Calling slot %s.%s resulted in TypeError, check your arguments; the \
@@ -61,18 +44,18 @@ original exception was: `%s'" % (mthd.__module__, mthd.__name__, err.message,))
 
     def __eq__(self, rhs):
         if isinstance(rhs, _MethodProxy):
-            return self._getRefs() == rhs._getRefs()
+            return self._get_refs() == rhs._get_refs()
 
         if type(rhs) != types.MethodType:
             return False
-        instance, mthd = self._getRefs()
+        instance, mthd = self._get_refs()
         return instance == rhs.im_self and mthd == rhs.im_func
 
     @property
     def object(self):
         return self._instanceRef()
 
-    def _getRefs(self):
+    def _get_refs(self):
         instance, mthd = self._instanceRef(), self._mthdRef()
         if instance is None:
             raise _DeadReference
@@ -85,12 +68,12 @@ class Signal(object):
     Observers connect methods ("slots") to the signal they're interested in, and when the
     signal is fired the methods are called back with the correct parameters.
     """
-    __allSignals = set()
+    __all_signals = set()
 
     def __init__(self):
 	self._slots = []
         self.__obj2slots = {}
-        Signal.__allSignals.add(self)
+        Signal.__all_signals.add(self)
         self.__enabled = True
 	
     def __call__(self, *args, **kwds):
@@ -123,22 +106,22 @@ class Signal(object):
         """ Disconnect signal from slot.
         @raise ValueError: Not connected to slot.
         """
-        e = self.__findSlot(slot)
+        e = self.__find_slot(slot)
         if e is None:
             raise ValueError(slot)
-        self.__removeEntry(e)
+        self.__remove_entry(e)
 
     @classmethod
-    def disconnectAllSignals(cls, obj):
+    def disconnect_all_signals(cls, obj):
         """ Disconnect all signals from an object and its methods.
         
         @note: If no connections are found for this object, no exception is raised.
         """
-        for sig in cls.__allSignals:
-            if sig.isConnected(obj):
-                sig.disconnectObject(obj)
+        for sig in cls.__all_signals:
+            if sig.is_connected(obj):
+                sig.disconnect_object(obj)
 
-    def disconnectObject(self, obj):
+    def disconnect_object(self, obj):
         """ Disconnect an object and its methods. """
         objSlots = self.__obj2slots[obj]
         for s in objSlots:
@@ -150,31 +133,31 @@ class Signal(object):
     def disable(self):
         self.__enabled = False
 
-    def setEnabled(self, enabled):
+    def set_enabled(self, enabled):
         self.__enabled = enabled
 
-    def isConnected(self, obj):
+    def is_connected(self, obj):
         """ Is an object connected to this signal. """
         return obj in self.__obj2slots
 
     def __connect(self, slot, defArgs, defKwds):
         e = (slot, defArgs, defKwds)
-        if self.__findSlot(slot) is None:
+        if self.__find_slot(slot) is None:
             self._slots.append(e)
 
         if not slot.object in self.__obj2slots:
             self.__obj2slots[slot.object] = []
         self.__obj2slots[slot.object].append(slot)
 
-    def __findSlot(self, slot):
+    def __find_slot(self, slot):
         for e in self._slots[:]:
             try:
                 if e[0] == slot:
                     return e
             except _DeadReference:
-                self.__removeEntry(e)
+                self.__remove_entry(e)
 
-    def __removeEntry(self, entry):
+    def __remove_entry(self, entry):
         self._slots.remove(entry)
         slot = entry[0]
         objSlots = self.__obj2slots[slot.object]
