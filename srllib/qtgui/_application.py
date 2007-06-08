@@ -16,33 +16,35 @@ class _AsyncEvent(QEvent):
         QEvent.__init__(self, self.__class__.EventType)
         self.func, self.obj, self.args, self.kwds = func, obj, args, kwds
         import threading
-        self.dispatchEvent = threading.Event()
+        self.dispatch_event = threading.Event()
 
 class Application(QApplication):
     """ Specialize QApplication to trap Python exceptions, inform the user and quit.
-    @cvar theApp: The L{application<Application>} object, if instantiated (otherwise None).
-    @ivar sigException: Emitted when detecting an unhandled exception.
+    @cvar the_app: The L{application<Application>} object, if instantiated (otherwise None).
+    @ivar sig_exception: Emitted when detecting an unhandled exception.
     """
     import srllib.signal
-    sigQuitting = srllib.signal.Signal()
-    theApp = None
+    sig_quitting = srllib.signal.Signal()
+    the_app = None
 
     def __init__(self, argv=sys.argv, catchExceptions=True):
         import PyQt4.QtGui
         QApplication.__init__(self, argv)
 
-        self.sigException = Signal()
+        self.sig_exception = Signal()
 
         self.__once, self.__hasQuit, self.__callQueue = True, False, []
         if catchExceptions:
-            sys.excepthook = self.__excHook
+            sys.excepthook = self.__exchook
         PyQt4.QtGui.qApp = self
-        Application.theApp = self
+        Application.the_app = self
 
         self.__deferredQueue = Queue.Queue()
         timer = self.__timer = QTimer(self)
-        QObject.connect(timer, SIGNAL("timeout()"), self.__slotTimedOut)
+        QObject.connect(timer, SIGNAL("timeout()"), self.__slot_timed_out)
         timer.start(20)
+
+    # Qt methods
 
     @staticmethod
     def setOverrideCursor(cursor):
@@ -53,39 +55,33 @@ class Application(QApplication):
         else:
             QApplication.setOverrideCursor(cursor)
 
-    def queueCall(self, toCall, args=None, kwds=None):
-        """ Queue a call for when control returns to the event loop. """
-        args = args or ()
-        kwds = kwds or {}
-        self.__callQueue.append((toCall, args, kwds))
-        QTimer.singleShot(0, self.__execCall)
-
-    def __execCall(self):
-        toCall, args, kwds = self.__callQueue.pop(0)
-        toCall(*args, **kwds)
-
-    def queueDeferred(self, mthd, args, kwds):
-        """ Queue deferred method call to be dispatched in GUI thread. """
-        self.__deferredQueue.put((mthd, args, kwds))
-
-    #{ Overridden Qt callbacks
-
     def customEvent(self, e):
         if not isinstance(e, _AsyncEvent):
             return QApplication.customEvent(self, e)
         e.func(e.obj, *e.args, **e.kwds)
-        e.dispatchEvent.set()
-
-    #}
+        e.dispatch_event.set()
 
     @classmethod
     def quit(cls):
-        assert not cls.theApp.__hasQuit, "The app has already quit"
-        cls.sigQuitting()
+        assert not cls.the_app.__hasQuit, "The app has already quit"
+        cls.sig_quitting()
         QApplication.quit()
-        cls.theApp.__hasQuit = True
+        cls.the_app.__hasQuit = True
 
-    def __slotTimedOut(self):
+    #}
+
+    def queue_call(self, toCall, args=None, kwds=None):
+        """ Queue a call for when control returns to the event loop. """
+        args = args or ()
+        kwds = kwds or {}
+        self.__callQueue.append((toCall, args, kwds))
+        QTimer.singleShot(0, self.__exec_call)
+
+    def queue_deferred(self, mthd, args, kwds):
+        """ Queue deferred method call to be dispatched in GUI thread. """
+        self.__deferredQueue.put((mthd, args, kwds))
+
+    def __slot_timed_out(self):
         """ Periodic callback for various chores.
         
         This callback is here used to dispatch background-thread events, and as an opportunity for
@@ -111,11 +107,11 @@ class Application(QApplication):
         for mthd, args, kwds, optimize in toDispatch:
             mthd(*args, **kwds)
 
-    def __excHook(self, exc, value, tb):
+    def __exchook(self, exc, value, tb):
         if self.__once:
             self.__once = False
 
-            self.sigException(exc, value, tb)
+            self.sig_exception(exc, value, tb)
 
             self.__timer.stop()
             import srllib.threading
@@ -134,3 +130,7 @@ developers may resolve the problem. This information should also be visible in t
             if not self.__hasQuit:
                 self.quit()
             self.processEvents()
+
+    def __exec_call(self):
+        toCall, args, kwds = self.__callQueue.pop(0)
+        toCall(*args, **kwds)

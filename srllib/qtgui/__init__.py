@@ -2,6 +2,6 @@
 from _application import *
 from _common import *
 
-def getApp():
+def get_app():
     """ Get the current L{Application} instance. """
-    return Application.theApp
+    return Application.the_app

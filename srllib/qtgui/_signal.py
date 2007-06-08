@@ -1,9 +1,9 @@
 from PyQt4.QtGui import qApp
 
-def deferredSlot(func, optimize=False):
+def deferred_slot(func, optimize=False):
     def schedule(self, *args, **kwds):
-        qApp.queueAsyncEvent(func, args, kwds, optimize)
+        qApp.queue_async_event(func, args, kwds, optimize)
     return schedule
 
-def deferredSlotOptimize(func):
-    return deferredSlot(func, optimize=True)
+def deferred_slot_optimize(func):
+    return deferred_slot(func, optimize=True)

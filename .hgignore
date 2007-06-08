@@ -1,3 +1,6 @@
 .*\.py[co]
 Docs/Epydoc
 .+.sw.
+build
+MANIFEST
+dist
