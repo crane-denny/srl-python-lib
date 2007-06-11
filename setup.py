@@ -8,5 +8,5 @@ setup(name="SRL Python Library",
         version=srllib.__version__,
         author="Simula Research Laboratory",
         author_email="arvenk@simula.no",
-        license=srllib.__license__, packages=["srllib"],
+        license=srllib.__license__, packages=["srllib", "srllib.qtgui"],
         **extra_kwds)
