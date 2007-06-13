@@ -1,2 +1,2 @@
 0.0.4:
-    * Added utility widget BrowseFile in qtgui package
+    * Added utility widgets BrowseFile, BrowseDirectory in qtgui package
