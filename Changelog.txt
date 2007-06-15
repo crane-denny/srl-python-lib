@@ -1,3 +1,5 @@
+15.06.2007 - 0.0.6:
+    * Bundle ez_setup for users lacking setuptools installation
 15.06.2007 - 0.0.5:
     * Use setuptools in setup script
 0.0.4:
