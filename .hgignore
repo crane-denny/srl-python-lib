@@ -4,3 +4,4 @@ Docs/Epydoc
 build
 MANIFEST
 dist
+.+\.egg-info

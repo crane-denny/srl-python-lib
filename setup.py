@@ -1,5 +1,5 @@
 import os.path, sys
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 import srllib
 
@@ -9,5 +9,6 @@ setup(name="SRL Python Library",
         author="Simula Research Laboratory",
         author_email="arvenk@simula.no",
         url="http://code.google.com/p/srl-python-lib",
-        license=srllib.__license__, packages=["srllib", "srllib.qtgui"],
+        license=srllib.__license__,
+        packages=find_packages(exclude=["Tests"]),
         **extra_kwds)

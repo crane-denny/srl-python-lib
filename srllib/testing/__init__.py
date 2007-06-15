@@ -418,3 +418,5 @@ def run_tests(package_name, gui=False, ignore=[]):
         pass
 
     sys.exit(r)
+
+from unittest import main
