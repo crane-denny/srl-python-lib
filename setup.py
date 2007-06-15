@@ -1,4 +1,7 @@
 import os.path, sys
+
+import ez_setup
+ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 
 import srllib
