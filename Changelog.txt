@@ -1,2 +1,4 @@
+15.06.2007 - 0.0.5:
+    * Use setuptools in setup script
 0.0.4:
     * Added utility widgets BrowseFile, BrowseDirectory in qtgui package
