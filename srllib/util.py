@@ -64,9 +64,12 @@ def get_checksum(path, format=Checksum_Hex):
 def get_module(name, path):
     """ Search for a module along a given path and load it.
     @param name: Module name.
-    @param path: Path of directories to search.
+    @param path: Path of directories to search. A single-directory path can be
+    expressed as a string.
     @raise ValueError: Module not found.
     """
+    if isinstance(path, basestring):
+        path = [path]
     try:
         file_, fname, extra = imp.find_module(name, path)
         mod = imp.load_module(name, file_, fname, extra)
