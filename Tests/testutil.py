@@ -157,6 +157,10 @@ class FileSystemTest(TestCase):
         # Test a non-existing module
         self.assertRaises(ValueError, util.get_module, "nosuchmodule", [os.path.dirname(fpath)])
 
+    def test_get_os(self):
+        self.assertIn(srllib.util.get_os(), srllib.util.Os_Linux,
+                srllib.util.Os_Windows)
+
     def __createDir(self):
         dpath = self._get_tempdir()
         file(os.path.join(dpath, "test"), "w")

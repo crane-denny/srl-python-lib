@@ -1,8 +1,12 @@
-""" Various utility functionality. """
-import stat, shutil, os.path, imp, platform, fnmatch, sys, errno
+""" Various utility functionality.
+@var Os_Linux: Tuple of identifiers for known versions of the Linux operating
+system
+@var Os_Windows: Tuple of identifiers for known versions of the Windows
+operating system
+"""
+import stat, shutil, os.path, imp, platform, fnmatch, sys, errno, platform
 try: import hashlib
 except ImportError: import sha
-
 from error import *
 
 def no_op(*args, **kwds):
@@ -76,6 +80,25 @@ def get_module(name, path):
     except ImportError:
         raise ValueError(name)
     return mod
+
+#{ Operating-system logic
+
+Os_Linux = "linux"
+Os_Windows = "windows"
+
+def get_os():
+    """ Get the current operating system.
+
+    Lower-case strings are used to identify operating systems.
+    @return: A pair of OS identifier and OS release (e.g. "xp") strings.
+    """
+    name, host, rls, ver, mach, proc = platform.uname()
+    name = name.lower()
+    if name == "windows":
+        name = "windows-%s" % (rls,)
+    return name
+
+#}
 
 #{ Filesystem utilities
 
