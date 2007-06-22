@@ -94,9 +94,7 @@ def get_os():
     """
     name, host, rls, ver, mach, proc = platform.uname()
     name = name.lower()
-    if name == "windows":
-        name = "windows-%s" % (rls,)
-    return name
+    return name, rls
 
 #}
 
