@@ -158,7 +158,7 @@ class FileSystemTest(TestCase):
         self.assertRaises(ValueError, util.get_module, "nosuchmodule", [os.path.dirname(fpath)])
 
     def test_get_os(self):
-        self.assertIn(srllib.util.get_os(), srllib.util.Os_Linux,
+        self.assertIn(srllib.util.get_os()[0], srllib.util.Os_Linux,
                 srllib.util.Os_Windows)
 
     def __createDir(self):
