@@ -1,6 +1,11 @@
-15.06.2007 - 0.0.6:
+06.23.2007 - 0.0.7:
+    * Added OS detection support in util module
+
+06.15.2007 - 0.0.6:
     * Bundle ez_setup for users lacking setuptools installation
-15.06.2007 - 0.0.5:
+
+06.15.2007 - 0.0.5:
     * Use setuptools in setup script
+
 0.0.4:
     * Added utility widgets BrowseFile, BrowseDirectory in qtgui package
