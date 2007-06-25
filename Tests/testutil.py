@@ -104,8 +104,8 @@ class FileSystemTest(TestCase):
             util.chmod(os.path.join(dpath0, "testdir"), 0000)
             self.assertRaises(util.PermissionsError, util.copy_dir, dpath0,
                     dpath1, force=True)
-            # Test file permissions
             util.chmod(os.path.join(dpath0, "testdir"), 0700)
+            # Test file permissions
             util.chmod(os.path.join(dpath0, "test"), 0000)
             self.assertRaises(util.PermissionsError, util.copy_dir, dpath0,
                     dpath1, force=True)
@@ -201,9 +201,12 @@ class FileSystemTest(TestCase):
 
     def __createDir(self):
         dpath = self._get_tempdir()
-        file(os.path.join(dpath, "test"), "w")
+        # We put some content inside the created files, since read permissions
+        # will not affect empty files (i.e., copying an empty file won't
+        # provoke an error)
+        util.create_file(os.path.join(dpath, "test"), "Test")
         os.mkdir(os.path.join(dpath, "testdir"))
-        file(os.path.join(dpath, "testdir", "test"), "w")
+        util.create_file(os.path.join(dpath, "testdir", "test"), "Test")
         return dpath
 
 class VariousTest(TestCase):
