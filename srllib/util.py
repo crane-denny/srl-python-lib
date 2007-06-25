@@ -9,6 +9,14 @@ try: import hashlib
 except ImportError: import sha
 from error import *
 
+class PermissionsError(SrlError):
+    """ Filesystem permissions error.
+    @ivar reason: Original reason for error.
+    """
+    def __init__(self, path, reason=None):
+        SrlError.__init__(self, "Unsufficient permissions for %s" % (path,))
+        self.reason = reason
+
 def no_op(*args, **kwds):
     """ Utility no-op function that accepts any arguments/keywords. """
     pass
@@ -121,11 +129,10 @@ def replace_root(path, new_root, orig_root=None):
 def _raise_permissions(func):
     """ Raise PermissionsError upon filesystem access error. """
     def wrapper(*args, **kwds):
-        print "Wrapper invoked"
         try: return func(*args, **kwds)
         except EnvironmentError, err:
             if err.errno == errno.EACCES:
-                raise PermissionsError(err.message)
+                raise PermissionsError(err.filename)
             else:
                 raise
 
@@ -235,14 +242,6 @@ def _copy_file(srcPath, dstPath, callback, totalBytes=None, readSoFar=long(0)):
 
     shutil.copystat(srcPath, dstPath)
     return readSoFar
-
-class PermissionsError(SrlError):
-    """ Filesystem permissions error.
-    @ivar reason: Original reason for error.
-    """
-    def __init__(self, path, reason=None):
-        SrlError.__init__(self, path)
-        self.reason = reason
 
 def copy_file(sourcePath, destPath, callback=no_op):
     """ Copy a file.
