@@ -4,5 +4,5 @@ Docs/Epydoc
 build
 MANIFEST
 dist
-.+\.egg-info
+.+\.egg.*
 setup.cfg
