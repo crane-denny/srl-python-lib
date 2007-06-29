@@ -6,3 +6,4 @@ MANIFEST
 dist
 .+\.egg.*
 setup.cfg
+\..*project
