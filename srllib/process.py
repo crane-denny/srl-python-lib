@@ -1,36 +1,66 @@
 """ Functionality for managing child processes. """
-import os.path, struct, cPickle, sys
+# Don't import signal from this package
+from __future__ import absolute_import
+import os.path, struct, cPickle, sys, signal, traceback
 
 from srllib import srlthreading
 from srllib._common import *
-from srllib.error import BusyError
+from srllib.error import BusyError, SrlError
+         
+class ChildError(SrlError):
+    """ Exception detected in child process.
+    
+    If the original exception derives from L{PickleableException}, it is
+    preserved, along with the traceback.
+    @ivar orig_exception: The original exception, possibly C{None}.
+    @ivar orig_traceback: Traceback of original exception, possibly C{None}.
+    """
+    def __init__(self, process_error):
+        SrlError.__init__(self, "Error in child process")    
+        if process_error.exc_class is not None:
+            assert process_error.exc_message is not None 
+            assert process_error.exc_traceback is not None
+            assert process_error.exc_arguments is not None
+            self.orig_exception = process_error.exc_class(*process_error.exc_arguments)
+        else:
+            self.orig_exception = None
+        self.orig_traceback = process_error.exc_traceback
+                    
+class PickleableException(SrlError):
+    def __init__(self, msg, *args):
+        SrlError.__init__(self, msg)
+        self.arguments = (msg,) + args
 
-class ProcessError(object):
+class _ProcessError(object):
     """ Encapsulation of a child process error.
     
     Exceptions don't pickle in the standard fashion, so we do it like this.
     @ivar message: Error message.
-    self.excMessage: Original exception message.
-    @ivar excClass: Class of original exception.
-    @ivar excArguments: Arguments of original exception.
-    @ivar excTraceback: Traceback of original exception.
+    @ivar exc_message: Original exception message.
+    @ivar exc_class: Class of original exception.
+    @ivar exc_arguments: Arguments of original exception.
+    @ivar exc_traceback: Traceback of original exception.
     """
-    def __init__(self, msg, originalExc=None, excTb=None):
+    def __init__(self, msg, original_exc=None, original_tb=None):
         self.message = msg
-        if originalExc is not None:
-            self.excClass = originalExc.__class__
-            self.excMessage = str(originalExc)
+        
+        sys.stderr.write("ProcessError: %r\n" % (original_exc,))
+        sys.stderr.flush()
+        if original_exc is not None:            
+            self.exc_message = str(original_exc)
         else:
-            self.excClass = self.excMessage = None
-        if isinstance(originalExc, PickleableException):
-            self.excArguments = originalExc.arguments
+            self.exc_message = None
+        if isinstance(original_exc, PickleableException):
+            self.exc_class = original_exc.__class__
+            self.exc_arguments = original_exc.arguments
         else:
-            self.excArguments = None
-        if excTb is not None:
-            self.excTraceback = traceback.format_tb(excTb)
+            self.exc_class = None
+            self.exc_arguments = None
+        if original_tb is not None:
+            self.exc_traceback = traceback.format_tb(original_tb)
         else:
-            self.excTraceback = None
-
+            self.exc_traceback = None
+            
 class Process(object):
     """ A child process abstraction.
 
@@ -95,6 +125,7 @@ class Process(object):
     def wait(self):
         """ Wait for child to die.
         @return: Child's exit code
+        @raise ChildError: Exception detected in child.
         """
         return self._poll(wait=True)
 
@@ -118,7 +149,7 @@ class Process(object):
         
         If this is the child process, message will be available for parent process and vice versa.
         This method may wait for the other process to "pick up the phone". A broken connection will
-        result in _EofError.
+        result in EofError.
         @param message: An arbitrary object.
         @param wait: Wait for acknowledgement.
         """
@@ -130,23 +161,26 @@ class Process(object):
         # Wait for ack
         a = self.pipe_in.read(1)
         if a == "":
-            raise _EofError
+            raise EofError
 
     def read_message(self):
-        """ Read message from other process. If this is the child process, message will be read from parent process
-        and vice versa. This method will wait until a message is actually received. A broken connection will result
-        in _EofError.
+        """ Read message from other process.
+        
+        If this is the child process, message will be read from parent process
+        and vice versa. This method will wait until a message is actually
+        received.
         @return: An arbitrary object written by the other process
+        @raise EofError: Broken connection.
         """
-        def readData(lnth):
+        def read_data(lnth):
             data = self.pipe_in.read(lnth)
             if len(data) < lnth:
-                raise _EofError
+                raise EofError
             return data
         
-        data = readData(struct.calcsize("i"))
+        data = read_data(struct.calcsize("i"))
         msgLnth = struct.unpack("i", data)[0]
-        data = readData(msgLnth)
+        data = read_data(msgLnth)
 
         # Ack
         try: self.pipe_out.write('a')
@@ -183,11 +217,11 @@ class Process(object):
 
         if self._childRet != 0:
             try: obj = self.read_message()
-            except _EofError:
+            except EofError:
                 pass
             else:
-                if isinstance(obj, ProcessError):
-                    raise obj
+                if isinstance(obj, _ProcessError):
+                    raise ChildError(obj)
         return self._childRet
 
     if get_os_name() == Os_Windows:   #pragma optional
@@ -264,15 +298,17 @@ class Process(object):
             if pid == 0:
                 # Child
                 try:
+                    # Make sure that these two point to the expected streams,
+                    # since they may have been replaced beforehand
+                    sys.stdout = os.fdopen(1, "w")
+                    sys.stderr = os.fdopen(2, "w")
+                    
                     os.close(self.__parentRead)
                     os.close(self.__parentWrite)
                     os.close(self.__readStdout)
                     os.close(self.__readStderr)
 
-                    # Redirect stds
                     if not self.__use_pty:
-                        f = file("stdout", "w")
-                        f.close()
                         os.dup2(self.__writeStdout, sys.stdout.fileno())
                     os.dup2(self.__writeStderr, sys.stderr.fileno())
                     os.close(self.__writeStdout)
@@ -290,7 +326,9 @@ class Process(object):
                     sys.stdout.flush()
                     sys.stderr.flush()
                 except Exception, err:
-                    self.write_message(ProcessError("Exception occurred in child process", err, sys.exc_info()[2]), wait=False)
+                    import traceback; traceback.print_exc()
+                    self.write_message(_ProcessError("Exception occurred in child process",
+                                                     err, sys.exc_info()[2]), wait=False)
                     os._exit(1)
 
                 os._exit(0)
@@ -303,22 +341,25 @@ class Process(object):
                 if self.__use_pty:
                     self.__makeNonBlocking(self.__ptyFd)
 
-class _EofError(IOError):
+class EofError(IOError):
     pass
 
 class ThreadedProcessMonitor(object):
     """ Monitor a child process in a background thread.
     @group Signals: sig*
     @ivar process: The L{child process<Process>}
-    @ivar sig_stdout: Triggered to deliver stdout output from the child process
-    @ivar sig_stderr: Triggered to deliver stderr output from the child process
-    @ivar sig_finished: Signal that monitor has finished, from background thread
-    @ivar sig_failed: Signal that monitored process failed, from background thread. Includes
-    the caught exception.
+    @ivar sig_stdout: Triggered to deliver stdout output from the child process.
+    @ivar sig_stderr: Triggered to deliver stderr output from the child process-
+    @ivar sig_finished: Signal that monitor has finished, from background thread.
+    Parameters: None.
+    @ivar sig_failed: Signal that monitored process failed, from background thread.
+    Paramaters: The caught exception.
     """
     def __init__(self, daemon=False, use_pty=False, pass_process=True):
         """ @param daemon: Start background threads in daemon mode
         @param use_pty: Open pseudo-terminal for child process.
+        @param pass_process: When executing functions in child processes,
+        should the L{Process} object be passed as a parameter?
         """
         self.sig_stdout, self.sig_stderr, self.sig_finished, self.sig_failed = \
                 Signal(), Signal(), Signal(), Signal()
@@ -341,10 +382,10 @@ class ThreadedProcessMonitor(object):
         import srllib.srlthreading
         self.__process = Process(child_func, child_args=child_args, child_kwds=child_kwds, use_pty=\
                 self.__use_pty, pass_process=self.__pass_process)
-        thrd = self._thrd = srlthreading.Thread(target=self._thrdFunc, daemon=self._daemon)
+        thrd = self._thrd = srlthreading.Thread(target=self._thrdfunc, daemon=self._daemon)
         thrd.start()
 
-    def terminateProcess(self, wait=False):
+    def terminate_process(self, wait=False):
         """ Terminate child process
         @param wait: Wait for process to die? Default False
         """
@@ -361,7 +402,7 @@ class ThreadedProcessMonitor(object):
 
         return self.__exit_code
 
-    def _thrdFunc(self):
+    def _thrdfunc(self):
         import select
         process = self.__process
         stdout, stderr, childOut = process.stdout, process.stderr, process.pipe_in
@@ -392,11 +433,11 @@ class ThreadedProcessMonitor(object):
                 # Process message from child
                 try:
                     obj = process.read_message()
-                except _EofError:
+                except EofError:
                     pollIn.remove(childOut)
                     pollIn = [] # Child is dead, no need to keep polling
                 else:
-                    if isinstance(obj, ProcessError):
+                    if isinstance(obj, _ProcessError):
                         procErr = obj
                         break
                     else:
