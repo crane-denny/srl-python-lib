@@ -29,7 +29,6 @@ class Application(QApplication):
 
     def __init__(self, argv=sys.argv, catchExceptions=True):
         import PyQt4.QtGui
-        print "Jhuhu!"
         QApplication.__init__(self, argv)
 
         self.sig_exception = Signal()
@@ -78,9 +77,9 @@ class Application(QApplication):
         self.__callQueue.append((toCall, args, kwds))
         QTimer.singleShot(0, self.__exec_call)
 
-    def queue_deferred(self, mthd, args, kwds):
+    def queue_deferred(self, mthd, args, kwds, optimize=False):
         """ Queue deferred method call to be dispatched in GUI thread. """
-        self.__deferredQueue.put((mthd, args, kwds))
+        self.__deferredQueue.put((mthd, args, kwds, optimize))
 
     def __slot_timed_out(self):
         """ Periodic callback for various chores.
@@ -123,7 +122,7 @@ class Application(QApplication):
                 
             msg = ' '.join(traceback.format_exception(exc, value, tb))
 
-            messageCritical("Fatal Error", "An unexpected exception was encountered%s, \
+            message_critical("Fatal Error", "An unexpected exception was encountered%s, \
 the application will have to be shut down." % (thrdSpecific,), detailedText=msg, informativeText=\
 "The detailed text provides full technical information of how the error happened, so \
 developers may resolve the problem. This information should also be visible in the application log.")

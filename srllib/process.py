@@ -420,7 +420,6 @@ class ThreadedProcessMonitor(object):
         pollIn, pollOut, pollEx = [stdout, stderr, childOut, self._event_pipe_in], [], []
         procErr = None
         while pollIn:
-            print "Polling"
             # Keep in mind that closed files will be seen as ready by select and cause it to wake up
             rd, wr, ex = select.select(pollIn, pollOut, pollEx)
 
@@ -468,5 +467,4 @@ class ThreadedProcessMonitor(object):
         if procErr is None:
             self.sig_finished()
         else:
-            print "Failed"
             self.sig_failed(ChildError(procErr))
