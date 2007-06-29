@@ -60,7 +60,7 @@ class Lock(object):
         if ret:
             global _thread_specific
             try:
-                locks = _thread_specific[Thread.currentThread()]["locks"]
+                locks = _thread_specific[Thread.current_thread()]["locks"]
                 locks.append(self)
             except KeyError:
                 pass
@@ -73,7 +73,7 @@ class Lock(object):
             self._lk.release(*args, **kwds)
         global _thread_specific
         try:
-            locks = _thread_specific[Thread.currentThread()]["locks"]
+            locks = _thread_specific[Thread.current_thread()]["locks"]
             if self in locks:
                 locks.remove(self)
         except KeyError:
@@ -172,9 +172,9 @@ class SynchronousCondition(object):
         self.__notified.set()
         self.__waited.set()
 
-def testCancel():
-    thrd = Thread.currentThread()
-    thrd.testCancel()
+def test_cancel():
+    thrd = Thread.current_thread()
+    thrd.test_cancel()
 
 class Thread(object):
     _thread_local = threading.local()
