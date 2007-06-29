@@ -2,6 +2,7 @@
 
 The functionality here improves upon that in the standard L{threading} module.
 """
+from __future__ import absolute_import
 import threading, os.path, traceback
 
 from srllib import util
