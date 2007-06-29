@@ -3,7 +3,7 @@
 from __future__ import absolute_import
 import os.path, struct, cPickle, sys, signal, traceback
 
-from srllib import srlthreading
+from srllib import threading
 from srllib._common import *
 from srllib.error import BusyError, SrlError
          
@@ -379,10 +379,9 @@ class ThreadedProcessMonitor(object):
         """
         if self.__process is not None:
             raise BusyError("Another process is already being monitored")
-        import srllib.srlthreading
         self.__process = Process(child_func, child_args=child_args, child_kwds=child_kwds, use_pty=\
                 self.__use_pty, pass_process=self.__pass_process)
-        thrd = self._thrd = srlthreading.Thread(target=self._thrdfunc, daemon=self._daemon)
+        thrd = self._thrd = threading.Thread(target=self._thrdfunc, daemon=self._daemon)
         thrd.start()
 
     def terminate_process(self, wait=False):
