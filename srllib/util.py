@@ -104,6 +104,22 @@ def get_os():
     name = name.lower()
     return name, rls
 
+def get_os_name():
+    """ Get the name of the current operating system.
+    
+    This convenience function simply returns the first element of the tuple
+    returned by L{get_os}.
+    """
+    return get_os()[0]
+    
+def get_os_version():
+    """ Get the version of the current operating system.
+    
+    This convenience function simply returns the second element of the tuple
+    returned by L{get_os}.
+    """
+    return get_os()[1]
+
 #}
 
 #{ Filesystem utilities

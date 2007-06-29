@@ -1,20 +1,3 @@
-# Part of Srl Python Components
-# Copyright (c) 2007 Srl Research Laboratory
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-# and associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-# NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-# OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """ Unit testing functionality. """
 import unittest, os.path, sys, shutil, tempfile
 
@@ -110,11 +93,11 @@ class TestCase(unittest.TestCase):
         if lhs > rhs:
             raise self.failureException, msg or "%r > %r" % (lhs, rhs)
 
-    def _connectTo(self, signal, slot):
+    def _connect_to(self, signal, slot):
         signal.connect(slot)
         self.__connections.append((signal, slot))
 
-    def _setAttr(self, obj, attr, val):
+    def _set_attr(self, obj, attr, val):
         """ Change an attribute of some object.
         
         The original attribute of the object is recorded, so that it can be restored after the test.
@@ -143,7 +126,7 @@ class TestCase(unittest.TestCase):
         else:
             m = mdl
 
-        self._setAttr(m, attr, val)
+        self._set_attr(m, attr, val)
 
     def _restore_attr(self, obj, attr):
         val = self._origAttrs.pop((obj, attr))
@@ -403,7 +386,6 @@ def run_tests(package_name, gui=False, ignore=[]):
     class TestCollector(nose.core.TestCollector):
         def loadtests(self):
             for t in self.loader.loadTestsFromDir(os.getcwd()):
-                print "Yielding %s" % t
                 yield t
 
     try:
