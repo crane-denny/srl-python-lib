@@ -29,6 +29,7 @@ class Application(QApplication):
 
     def __init__(self, argv=sys.argv, catchExceptions=True):
         import PyQt4.QtGui
+        print "Jhuhu!"
         QApplication.__init__(self, argv)
 
         self.sig_exception = Signal()
@@ -134,3 +135,8 @@ developers may resolve the problem. This information should also be visible in t
     def __exec_call(self):
         toCall, args, kwds = self.__callQueue.pop(0)
         toCall(*args, **kwds)
+        
+def get_app():
+    """ Get the current L{Application} instance. """
+    return Application.the_app
+
