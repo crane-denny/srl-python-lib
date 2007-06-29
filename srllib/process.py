@@ -62,11 +62,12 @@ class _ProcessError(object):
             self.exc_traceback = None
             
 class Process(object):
-    """ A child process abstraction.
+    """ Invoke a callable in a child process.
 
-    Instantiating an object of this class will spawn a child process, pipes are provided for the standard streams
-    and a separate pipe for communication between parent and child. stdout and stderr are made non-blocking so they
-    can easily be drained of data.
+    Instantiating an object of this class will spawn a child process, I{in which a
+    provided callable is invoked}. Pipes are provided for the standard streams
+    and a separate pipe for communication between parent and child. stdout and
+    stderr are made non-blocking so they can easily be drained of data.
     @ivar stdout: Child's stdout file.
     @ivar stderr: Child's stderr file.
     @ivar pipe_in: File for passing message to other process.
@@ -75,8 +76,7 @@ class Process(object):
     def __init__(self, child_func, child_args=[], child_kwds={}, name=None,
                  use_pty=False, pass_process=True):
         """
-        @param child_func: Function to be called in child process, this will be handed the Process object
-        as the first argument.
+        @param child_func: Function to be called in child process.
         @param child_args: Optional arguments for the child function.
         @param child_kwds: Optional keywords for the child function.
         @param name: Optional name for the process:
@@ -326,7 +326,6 @@ class Process(object):
                     sys.stdout.flush()
                     sys.stderr.flush()
                 except Exception, err:
-                    import traceback; traceback.print_exc()
                     self.write_message(_ProcessError("Exception occurred in child process",
                                                      err, sys.exc_info()[2]), wait=False)
                     os._exit(1)
@@ -356,7 +355,8 @@ class ThreadedProcessMonitor(object):
     Paramaters: The caught exception.
     """
     def __init__(self, daemon=False, use_pty=False, pass_process=True):
-        """ @param daemon: Start background threads in daemon mode
+        """
+        @param daemon: Start background threads in daemon mode
         @param use_pty: Open pseudo-terminal for child process.
         @param pass_process: When executing functions in child processes,
         should the L{Process} object be passed as a parameter?
@@ -383,6 +383,18 @@ class ThreadedProcessMonitor(object):
                 self.__use_pty, pass_process=self.__pass_process)
         thrd = self._thrd = threading.Thread(target=self._thrdfunc, daemon=self._daemon)
         thrd.start()
+        
+    def monitor_command(self, arguments, cwd=None, env=None):
+        if self.__process is not None:
+            raise BusyError("Another process is already being monitored")
+        self.__process = Process(self.__run_command, child_args=[arguments, cwd, env])
+        thrd = self._thrd = threading.Thread(target=self._thrdfunc, daemon=self._daemon)
+        thrd.start()
+        
+    def __run_command(self, process, arguments, cwd, env):
+        if cwd is not None:
+            os.chdir(cwd)
+        os.execve(arguments[0], arguments, env)
 
     def terminate_process(self, wait=False):
         """ Terminate child process
@@ -406,8 +418,9 @@ class ThreadedProcessMonitor(object):
         process = self.__process
         stdout, stderr, childOut = process.stdout, process.stderr, process.pipe_in
         pollIn, pollOut, pollEx = [stdout, stderr, childOut, self._event_pipe_in], [], []
-        procErr= None
+        procErr = None
         while pollIn:
+            print "Polling"
             # Keep in mind that closed files will be seen as ready by select and cause it to wake up
             rd, wr, ex = select.select(pollIn, pollOut, pollEx)
 
@@ -455,4 +468,5 @@ class ThreadedProcessMonitor(object):
         if procErr is None:
             self.sig_finished()
         else:
-            self.sig_failed(procErr)
+            print "Failed"
+            self.sig_failed(ChildError(procErr))
