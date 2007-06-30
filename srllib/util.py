@@ -4,7 +4,7 @@ system
 @var Os_Windows: Tuple of identifiers for known versions of the Windows
 operating system
 """
-import stat, shutil, os.path, imp, platform, fnmatch, sys, errno, platform
+import stat, shutil, os.path, imp, platform, fnmatch, sys, errno
 try: import hashlib
 except ImportError: import sha
 from error import *
@@ -93,6 +93,7 @@ def get_module(name, path):
 
 Os_Linux = "linux"
 Os_Windows = "windows"
+Os_Posix = (Os_Linux,)
 
 def get_os():
     """ Get the current operating system.
@@ -132,9 +133,10 @@ def replace_root(path, new_root, orig_root=None):
     @return: The new pathname.
     """
     if orig_root is None:
-        if Os in Posix:
+        os_name = get_os_name()
+        if os_name in Os_Posix:
             orig_root = "/"
-        elif Os in Windows:
+        elif os_name == Os_Windows:
             orig_root = path.split(os.path.sep, 1)[0] + os.path.sep
     else:
         orig_root = os.path.normpath(orig_root)
@@ -208,7 +210,7 @@ def move_file(src, dest, force=False):
     if platform.system() == "Windows" and os.path.isfile(dest):
         # Necessary on Windows
         if force:
-            dstMode = get_file_permissions(dst)
+            dstMode = get_file_permissions(dest)
             if not dstMode & stat.S_IWRITE:
                 chmod(dest, dstMode | stat.S_IWRITE)
         os.remove(dest)
