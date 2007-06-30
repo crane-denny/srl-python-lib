@@ -35,7 +35,7 @@ def register_exceptionhandler(handler):
 def restore_exceptionhandler():
     """ Restore global exception handler to previous one. """
     global _exc_handler, _prev_handler
-    _exc_handler = _prevExcHandler
+    _exc_handler = _prev_handler
 
 def synchronized(func):
     """ Decorator for making functions thread-safe. """
