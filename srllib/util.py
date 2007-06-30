@@ -291,10 +291,10 @@ class DestinationExists(SrlError):
     pass
 
 @_raise_permissions
-def copy_dir(sourceDir, destDir, callback=no_op, ignore=[], force=False):
+def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
     """ Copy a directory and its contents.
-    @param sourceDir: Source directory.
-    @param destDir: Destination directory.
+    @param sourcedir: Source directory.
+    @param destdir: Destination directory.
     @param callback: Optional callback to be invoked periodically with progress status.
     @param ignore: Optional list of filename glob patterns to ignore.
     @param force: Force copying even if destination exists (implies deleting destination)?
@@ -302,10 +302,10 @@ def copy_dir(sourceDir, destDir, callback=no_op, ignore=[], force=False):
     specified).
     @raise PermissionsError: Missing permission to perform operation.
     """
-    if os.path.exists(destDir):
+    if os.path.exists(destdir):
         if not force:
-            raise DestinationExists(destDir)
-        remove_file_or_dir(destDir)
+            raise DestinationExists(destdir)
+        remove_file_or_dir(destdir)
 
     def filter(names):
         """ Filter list of filesystem names in-place. When using os.walk, directories removed
@@ -316,13 +316,13 @@ def copy_dir(sourceDir, destDir, callback=no_op, ignore=[], force=False):
                     names.remove(name)
         return names
 
-    os.makedirs(destDir)
+    os.makedirs(destdir)
     if platform.system() != "Windows":
         # Won't work on Windows
-        shutil.copystat(sourceDir, destDir)
+        shutil.copystat(sourcedir, destdir)
     numFiles = 0
     allBytes = 0
-    for dpath, dnames, fnames in walkdir(sourceDir):
+    for dpath, dnames, fnames in walkdir(sourcedir):
         for d in filter(dnames):
             allBytes += 1
         for f in filter(fnames):
@@ -334,10 +334,10 @@ def copy_dir(sourceDir, destDir, callback=no_op, ignore=[], force=False):
     allBytes = float(allBytes)
     # Use a long to make sure it can hold a long enough number
     readSoFar = long(0)
-    for dpath, dnames, fnames in walkdir(sourceDir):
+    for dpath, dnames, fnames in walkdir(sourcedir):
         for d in filter(dnames):
             srcPath = os.path.join(dpath, d)
-            dstPath = replace_root(srcPath, destDir, sourceDir)
+            dstPath = replace_root(srcPath, destdir, sourcedir)
             os.mkdir(dstPath)
             if platform.system() != "Windows":
                 # Won't work on Windows
@@ -346,7 +346,7 @@ def copy_dir(sourceDir, destDir, callback=no_op, ignore=[], force=False):
             callback(readSoFar / allBytes * 100)
         for f in filter(fnames):
             srcPath = os.path.join(dpath, f)
-            dstPath = replace_root(srcPath, destDir, sourceDir)
+            dstPath = replace_root(srcPath, destdir, sourcedir)
             readSoFar = _copy_file(srcPath, dstPath, callback, allBytes, readSoFar)
 
 def create_tempfile(suffix="", prefix="tmp", close=True):
