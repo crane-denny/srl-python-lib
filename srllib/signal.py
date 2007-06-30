@@ -96,10 +96,8 @@ class Signal(object):
         to slot """
         if isinstance(slot, types.MethodType):
             prxyTp = _MethodProxy
-            obj = slot.im_self
         else:
             prxyTp = _FunctionProxy
-            obj = slot
         self.__connect(prxyTp(slot), defArgs, defKwds)
 
     def disconnect(self, slot):
@@ -164,3 +162,4 @@ class Signal(object):
         objSlots.remove(slot)
         if not objSlots:
             del self.__obj2slots[slot.object]
+
