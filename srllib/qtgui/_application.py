@@ -33,13 +33,13 @@ class Application(QApplication):
 
         self.sig_exception = Signal()
 
-        self.__once, self.__hasQuit, self.__callQueue = True, False, []
+        self.__once, self.__hasQuit, self.__call_queue = True, False, []
         if catchExceptions:
             sys.excepthook = self.__exchook
         PyQt4.QtGui.qApp = self
         Application.the_app = self
 
-        self.__deferredQueue = Queue.Queue()
+        self.__deferred_queue = Queue.Queue()
         timer = self.__timer = QTimer(self)
         QObject.connect(timer, SIGNAL("timeout()"), self.__slot_timed_out)
         timer.start(20)
@@ -70,41 +70,44 @@ class Application(QApplication):
 
     #}
 
-    def queue_call(self, toCall, args=None, kwds=None):
-        """ Queue a call for when control returns to the event loop. """
+    def queue_call(self, to_call, args=None, kwds=None):
+        """ Queue a call for when control returns to the event loop.
+        """
         args = args or ()
         kwds = kwds or {}
-        self.__callQueue.append((toCall, args, kwds))
+        self.__call_queue.append((to_call, args, kwds))
         QTimer.singleShot(0, self.__exec_call)
 
     def queue_deferred(self, mthd, args, kwds, optimize=False):
-        """ Queue deferred method call to be dispatched in GUI thread. """
-        self.__deferredQueue.put((mthd, args, kwds, optimize))
+        """ Queue deferred method call to be dispatched in GUI thread.
+        """
+        self.__deferred_queue.put((mthd, args, kwds, optimize))
 
     def __slot_timed_out(self):
         """ Periodic callback for various chores.
         
-        This callback is here used to dispatch background-thread events, and as an opportunity for
-        Python to process incoming OS signals (e.g., SIGINT resulting from Ctrl+C).
+        This callback is here used to dispatch background-thread signals, and
+        as an opportunity for Python to process incoming OS signals (e.g.,
+        SIGINT resulting from Ctrl+C).
         """
         # Find deferred calls and dispatch them
 
-        toDispatch = []
+        to_dispatch = []
         while True:
-            try: mthd, args, kwds, optimize = self.__deferredQueue.get_nowait()
+            try: mthd, args, kwds, optimize = self.__deferred_queue.get_nowait()
             except Queue.Empty:
                 break
-            toDispatch.append((mthd, args, kwds, optimize))
+            to_dispatch.append((mthd, args, kwds, optimize))
 
         last = None
-        i = len(toDispatch) - 1
-        for mthd, args, kwds, optimize in reversed(toDispatch):
+        i = len(to_dispatch) - 1
+        for mthd, args, kwds, optimize in reversed(to_dispatch):
             if mthd is last and optimize:
                 # Don't call several times
-                del toDispatch[i]
+                del to_dispatch[i]
             last = mthd
             i -= 1
-        for mthd, args, kwds, optimize in toDispatch:
+        for mthd, args, kwds, optimize in to_dispatch:
             mthd(*args, **kwds)
 
     def __exchook(self, exc, value, tb):
@@ -132,7 +135,7 @@ developers may resolve the problem. This information should also be visible in t
             self.processEvents()
 
     def __exec_call(self):
-        toCall, args, kwds = self.__callQueue.pop(0)
+        toCall, args, kwds = self.__call_queue.pop(0)
         toCall(*args, **kwds)
         
 def get_app():
