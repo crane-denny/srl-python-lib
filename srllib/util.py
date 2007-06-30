@@ -320,7 +320,6 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
     if platform.system() != "Windows":
         # Won't work on Windows
         shutil.copystat(sourcedir, destdir)
-    numFiles = 0
     allBytes = 0
     for dpath, dnames, fnames in walkdir(sourcedir):
         for d in filter(dnames):
