@@ -39,8 +39,9 @@ class _MethodProxy(object):
         instance, mthd = self._get_refs()
         try: mthd(instance, *args, **kwds)
         except TypeError, err:
-            raise CallFailure("Calling slot %s.%s resulted in TypeError, check your arguments; the \
-original exception was: `%s'" % (mthd.__module__, mthd.__name__, err.message,))
+            raise CallFailure("Calling slot %s.%s resulted in TypeError, check \
+your arguments; the original exception was: `%s'" %
+                    (mthd.__module__, mthd.__name__, err.message,))
 
     def __eq__(self, rhs):
         if isinstance(rhs, _MethodProxy):
@@ -71,13 +72,14 @@ class Signal(object):
     __all_signals = set()
 
     def __init__(self):
-	self._slots = []
+        self._slots = []
         self.__obj2slots = {}
         Signal.__all_signals.add(self)
         self.__enabled = True
 	
     def __call__(self, *args, **kwds):
-	""" For each group in sorted order, call each slot """
+        """ For each group in sorted order, call each slot.
+        """ 
         if not self.__enabled:
             return
 
@@ -92,8 +94,9 @@ class Signal(object):
                 self._slots.remove(e)
 
     def connect(self, slot, defArgs=(), defKwds={}):
-	""" Connect this signal to a slot, alternatively grouped. Optionally, keywords can be bound
-        to slot """
+        """ Connect this signal to a slot, alternatively grouped. Optionally,
+        keywords can be bound to slot.
+        """
         if isinstance(slot, types.MethodType):
             prxyTp = _MethodProxy
         else:
