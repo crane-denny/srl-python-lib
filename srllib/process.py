@@ -3,7 +3,7 @@
 from __future__ import absolute_import
 import os.path, struct, cPickle, sys, signal, traceback
 
-from srllib import threading
+from srllib import threading, util
 from srllib._common import *
 from srllib.error import BusyError, SrlError
          
@@ -269,11 +269,12 @@ class Process(object):
             import win32process, win32event, win32api
             sinfo = win32process.STARTUPINFO()
             sinfo.dwFlags |= win32process.STARTF_USESTDHANDLES
+            childRead, writeStdout, writeStderr = self.__childRead, self.__writeStdout, self.__writeStderr
             sinfo.hStdInput = childRead
             sinfo.hStdOutput = writeStdout
             sinfo.hStdError = writeStderr
 
-            fname = util.createTemporaryFile()
+            fname = util.create_tempfile()
             try:
                 self.__handle, ht, self._pid, tid = win32process.CreateProcess(util.resolvePath("python"), \
                         "python %s" % fname, None, None, 1, 0, None, None, sinfo)
