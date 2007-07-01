@@ -356,6 +356,11 @@ class ThreadedProcessMonitor(object):
         self._daemon = daemon
         self._thrd = None
 
+    @property
+    def process(self):
+        """ The monitored process. """
+        return self.__process
+
     def __call__(self, child_func, child_args=[], child_kwds={}):
         """ Execute function in child process, monitored in background thread.
         @param child_func: Function to execute
@@ -373,22 +378,11 @@ class ThreadedProcessMonitor(object):
     def monitor_command(self, arguments, cwd=None, env=None):
         if self.__process is not None:
             raise BusyError("Another process is already being monitored")
-        self.__process = Process(self.__run_command, child_args=[arguments, cwd, env])
+        self.__process = subprocess.Popen(arguments, cwd=cwd, env=env,
+                                          stdout=subprocess.PIPE, stderr=
+                                          subprocess.PIPE)
         thrd = self._thrd = threading.Thread(target=self._thrdfunc, daemon=self._daemon)
         thrd.start()
-        
-    def __run_command(self, process, arguments, cwd, env):
-        if cwd is not None:
-            os.chdir(cwd)
-        os.execve(arguments[0], arguments, env)
-
-    def terminate_process(self, wait=False):
-        """ Terminate child process
-        @param wait: Wait for process to die? Default False
-        """
-        self._event_pipe_out.write("t")
-        if wait:
-            self.wait()
 
     def wait(self):
         """ Wait for monitoring thread to finish.
@@ -400,6 +394,18 @@ class ThreadedProcessMonitor(object):
 
         return self.__exit_code
 
+    def _thrdfunc(self):
+        prcs = self.__process
+        try: self.__exit_code = prcs.wait()
+        except ChildError, err:
+            self.sig_failed(err)
+        else:
+            self.sig_finished()
+        prcs.close()
+        self.__process = None
+
+    '''
+    # POSIX
     def _thrdfunc(self):
         import select
         process = self.__process
@@ -444,3 +450,4 @@ class ThreadedProcessMonitor(object):
             self.sig_finished()
         self.__process.close()
         self.__process = None
+    '''
