@@ -187,6 +187,7 @@ except Exception, err:
         if self.__exit_rslt is None:
             self.wait()
         os.remove(self.__errpipe_path)
+        os.remove(self.__script_fname)
             
     def poll(self):
         """ Check if child has exited.
