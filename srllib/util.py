@@ -93,7 +93,9 @@ def get_module(name, path):
 
 Os_Linux = "linux"
 Os_Windows = "windows"
-Os_Posix = (Os_Linux,)
+
+OsCollection_Posix = (Os_Linux,)
+Os_Posix = OsCollection_Posix   # Backwards-compat
 
 def get_os():
     """ Get the current operating system.
