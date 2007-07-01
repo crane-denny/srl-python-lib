@@ -403,7 +403,8 @@ class ThreadedProcessMonitor(object):
             self.sig_failed(err)
         else:
             self.sig_finished()
-        prcs.close()
+        if hasattr(prcs, "close"):
+            prcs.close()
         self.__process = None
 
     '''
