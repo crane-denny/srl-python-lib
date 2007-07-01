@@ -131,8 +131,12 @@ class FileSystemTest(TestCase):
             os.remove(file_.name)
         file_ = util.create_tempfile(close=False, content="Test")
         try:
-            self.assertEqual(file_.read(), "Test")
-            file_.write("\nTest")
+            txt = file_.read()
+            self.assertEqual(txt, "Test")
+            # XXX: On Windows, we have to write from the beginning of file for
+            # some reason, otherwise IOError is raised
+            file_.seek(0)
+            file_.write(txt + "\nTest")
             file_.seek(0)
             self.assertEqual(file_.read(), "Test\nTest")
         finally: file_.close()
