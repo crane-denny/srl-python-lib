@@ -135,4 +135,15 @@ class ThreadedProcessMonitorTest(TestCase):
         procmon.wait()
         self.assert_(isinstance(self.__error, _process.ChildError), self.__error)
         self.assertNot(self.__finished)
+        
+    def test_command(self):
+        """ Test monitoring a command (invoke a command instead of a Python
+        callable).
+        """
+        procmon = _process.ThreadedProcessMonitor()
+        cwd = self._get_tempdir()
+        procmon.monitor_command(["python", "-c", "import os; print os.getcwd()"],
+                                cwd=cwd)
+        prcs = procmon.process
+        self.assertEqual(prcs.stdout.read().strip(), cwd)
     
