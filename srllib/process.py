@@ -1,7 +1,8 @@
 """ Functionality for managing child processes. """
 # Don't import signal from this package
 from __future__ import absolute_import
-import os.path, struct, cPickle, sys, signal, traceback
+import os.path, struct, cPickle, sys, signal, traceback, subprocess, errno, \
+    stat, time
 
 from srllib import threading, util
 from srllib._common import *
@@ -61,6 +62,32 @@ class _ProcessError(object):
         else:
             self.exc_traceback = None
             
+class PickleError(SrlError):
+    pass
+
+class _MthdProxy(object):
+    def __init__(self, mthd):
+        self.__obj, self.__cls, self.__name = mthd.im_self, mthd.im_class, \
+            mthd.im_func.func_name
+
+    def __call__(self, *args, **kwds):
+        name = self.__name
+        if name.startswith("__"):
+            # Mangle
+            name = "_%s%s" % (self.__cls.__name__, name)
+        func = getattr(self.__cls, name)
+        func(self.__obj, *args, **kwds)
+
+class ChildDied(SrlError):
+    """ Child died unexpectedly.
+    @ivar exitcode: Child's exit code.
+    @ivar stderr: Child's stderr.
+    """
+    def __init__(self, exitcode, stderr):
+        SrlError.__init__(self, "Child died unexpectedly (exit code %d)" %
+                          exitcode)
+        self.exitcode, self.stderrr = exitcode, stderr
+            
 class Process(object):
     """ Invoke a callable in a child process.
 
@@ -69,38 +96,73 @@ class Process(object):
     and a separate pipe for communication between parent and child. stdout and
     stderr are made non-blocking so they can easily be drained of data.
     @ivar stdout: Child's stdout file.
-    @ivar stderr: Child's stderr file.
-    @ivar pipe_in: File for passing message to other process.
-    @ivar pipe_out: File for reading message from other process.
+    @ivar stderr: Child's stderr file..
     """
-    def __init__(self, child_func, child_args=[], child_kwds={}, name=None,
-                 use_pty=False, pass_process=True):
+    def __init__(self, child_func, child_args=[], child_kwds={}):
         """
         @param child_func: Function to be called in child process.
         @param child_args: Optional arguments for the child function.
         @param child_kwds: Optional keywords for the child function.
-        @param name: Optional name for the process:
-        @param use_pty: Open pseudo-terminal for child process.
-        @param pass_process: Pass this object as first parameter to child function?
+        @raise ChildDied: Child died unexpectedly.
         """
-        if name is None:
-            name = os.getpid()
-        self.name = name
-        self.__use_pty, self.__passProcess = use_pty, pass_process
+        self.__exit_rslt = None
+        # We execute in the child a script which first unpickles the function
+        # and its parameters, and then invokes it. This is the best cross-
+        # platform approach that we've found (since Windows does not support
+        # fork)
+        script_fname = self.__script_fname = util.create_tempfile(content=
+r"""import cPickle, sys, struct
+pipe_path = sys.argv[1]
+lnth = struct.unpack("@I", sys.stdin.read(4))[0]
+sys.path = cPickle.loads(sys.stdin.read(lnth))
+lnth = struct.unpack("@I", sys.stdin.read(4))[0]
+func, args, kwds = cPickle.loads(sys.stdin.read(lnth))
+try: func(*args, **kwds)
+except Exception, err:
+    from srllib.process import _ProcessError
+    pickle = cPickle.dumps(_ProcessError("Error in child", err, sys.exc_info()[2]))
+    f = file(pipe_path, "wb")
+    try: f.write(pickle)
+    finally: f.close()
+""")
         
-        parentRead, parentWrite, childRead, childWrite, readStdout, writeStdout, readStderr, writeStderr = \
-                self.__createPipes()
-        self.__exec_child(child_func, child_args, child_kwds)
-        if self.name is None:
-            self.name = "Process<%d>" % (self.pid,)
-        self.pipe_in, self.pipe_out = os.fdopen(parentRead, "r", 0), os.fdopen(parentWrite, "w", 0)
-        # Open in line-buffered mode
-        if self.__use_pty:
-            os.close(readStdout)
-            readStdout = self.__ptyFd
-        self.stdout, self.stderr = os.fdopen(readStdout, "r", 1), os.fdopen(readStderr, "r", 1)
+        # XXX: Some day we might want to use a real (named) pipe ...
+        pipe_path = self.__errpipe_path = util.create_tempfile()
+        prcs = self.__prcs = subprocess.Popen(["python", script_fname, pipe_path],
+                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, universal_newlines=
+                                    True, bufsize=-1)
+        
+        import types
+        if isinstance(child_func, types.MethodType):
+            # Can't pickle instance methods
+            child_func = _MthdProxy(child_func)
+        # Pickle the path, to ensure proper unpickling
+        path_data = cPickle.dumps(sys.path)
+        try: func_data = cPickle.dumps((child_func, child_args, child_kwds))
+        except TypeError, err:
+            print err
+            raise PickleError("Failed to pickle %r, is this e.g. a nested definition?" % \
+                    child_func)
+        try:
+            prcs.stdin.write(struct.pack("@I", len(path_data)))
+            prcs.stdin.write(path_data)
+            prcs.stdin.write(struct.pack("@I", len(func_data)))
+            prcs.stdin.write(func_data)
+            # Important: Flush what we've written so child isn't stuck waiting for data
+            prcs.stdin.flush()
+        except EnvironmentError, err:
+            if err.errno == errno.EPIPE:
+                exitcode = self.wait()
+                raise ChildDied(exitcode, prcs.stderr.read())
+            raise
 
-        self._files = self.pipe_in, self.pipe_out, self.stdout, self.stderr
+        self._pid = prcs.pid
+        if get_os_name() == Os_Windows:
+            import win32api
+            # Open with rights to terminate and synchronize
+            self.__prcs_handle = win32api.OpenProcess(0x1 | 0x100000, False,
+                                    self.pid)
 
     def __str__(self):
         return self.name
@@ -108,40 +170,79 @@ class Process(object):
     @property
     def pid(self):
         return self._pid
+    
+    @property
+    def stdout(self):
+        return self.__prcs.stdout
+    
+    @property
+    def stderr(self):
+        return self.__prcs.stderr
 
     def close(self):
         """ Release resources.
 
         If the process is still alive, it is waited for.
         """
-        if self.poll() is None:
+        os.remove(self.__errpipe_path)
+        if self.__exit_rslt is None:
             self.wait()
-        for f in self._files:
-            f.close()
-
+            
     def poll(self):
-        return self._poll(wait=False)
+        """ Check if child has exited.
+        @return: If child has exited, its exit code, else C{None}.
+        """
+        rslt = self.__exit_rslt
+        if rslt is not None:
+            if isinstance(rslt, ChildError):
+                raise rslt 
+            assert isinstance(rslt, int)
+            return rslt
+        r = self.__prcs.poll()
+        f = file(self.__errpipe_path, "rb")
+        try: data = f.read()
+        finally: f.close()
+        if data:
+            # Exception from child process
+            err = cPickle.loads(data)
+            self.__exit_rslt = ChildError(err)            
+            raise self.__exit_rslt
+        return r
 
     def wait(self):
-        """ Wait for child to die.
-        @return: Child's exit code
+        """ Wait for child to finish.
+        @return: Child's exit code.
         @raise ChildError: Exception detected in child.
         """
-        return self._poll(wait=True)
+        self.__prcs.wait()
+        return self.poll()
 
     def terminate(self):
-        """ Kill child process. This method will block until it is determined that the child has in fact terminated.
-        @return: The child's exit status
+        """ Kill child process.
+        
+        This method will block until it is determined that the child has in fact
+        terminated.
+        @return: The child's exit status.
         """
-        import signal, time
-        try:
-            os.kill(self.pid, signal.SIGTERM)
-            time.sleep(.5)
-        except OSError:
-            # Presumably, the child is dead already?
-            pass
-        if self.poll() is None:
-            os.kill(self.pid, signal.SIGKILL)
+        r = self.poll()
+        if r is not None:
+            return r
+        if get_os_name() == Os_Windows:
+            import win32process
+            win32process.TerminateProcess(self.__prcs_handle, 0)
+        else:
+            try:
+                os.kill(self.pid, signal.SIGTERM)
+                time.sleep(.05)
+            except OSError, err:
+                if err.errno == errno.ECHILD:
+                    # Presumably, the child is dead already?
+                    pass
+                else:
+                    raise
+            if self.poll() is None:
+                os.kill(self.pid, signal.SIGKILL)
+
         return self.wait()
 
     def write_message(self, message, wait=True):
@@ -224,122 +325,6 @@ class Process(object):
                     raise ChildError(obj)
         return self._childRet
 
-    if get_os_name() == Os_Windows:   #pragma optional
-        def __createPipes(self):
-            def createPipe(sattr, convertRead=False, convertWrite=False):
-                read, write = win32pipe.CreatePipe(sattr, 0)
-                if convertRead:
-                    read = msvcrt.open_osfhandle(read.Detach(), 0)
-                if convertWrite:
-                    write = msvcrt.open_osfhandle(write.Detach(), 0)
-                return read, write
-
-            import win32pipe, win32security, msvcrt
-            sattr = win32security.SECURITY_ATTRIBUTES()
-            sattr.bInheritHandle = 1
-            sattr.SECURITY_DESCRIPTOR = None
-            self.__childRead, self.__parentWrite = createPipe(sattr, convertWrite=True)
-            self.__parentRead, self.__childWrite = createPipe(sattr, True, True)
-            self.__readStdout, self.__writeStdout = createPipe(sattr, convertRead=True)
-            self.__readStderr, self.__writeStderr = createPipe(sattr, convertRead=True)
-
-            return self.__parentRead, self.__parentWrite, self.__childRead, self.__childWrite, \
-                    self.__readStdout, self.__writeStdout, self.__readStderr, self.__writeStderr
-    else:
-        def __makeNonBlocking(self, fd):
-            import fcntl
-            flags = fcntl.fcntl(fd, fcntl.F_GETFL)
-            flags |= os.O_NONBLOCK
-            fcntl.fcntl(fd, fcntl.F_SETFL, flags)
-
-        def __createPipes(self):
-            # Communication between parent-child
-            self.__parentRead, self.__childWrite = os.pipe()
-            self.__childRead, self.__parentWrite = os.pipe()
-            self.__readStdout, self.__writeStdout = os.pipe()
-            self.__readStderr, self.__writeStderr = os.pipe()
-            self.__makeNonBlocking(self.__readStdout)
-            self.__makeNonBlocking(self.__readStderr)
-
-            return self.__parentRead, self.__parentWrite, self.__childRead, self.__childWrite, \
-                    self.__readStdout, self.__writeStdout, self.__readStderr, self.__writeStderr
-
-    if get_os_name() == Os_Windows:   #pragma: optional
-        def __exec_child(self, child_func, child_args, child_kwds):
-            import win32process, win32event, win32api
-            sinfo = win32process.STARTUPINFO()
-            sinfo.dwFlags |= win32process.STARTF_USESTDHANDLES
-            childRead, writeStdout, writeStderr = self.__childRead, self.__writeStdout, self.__writeStderr
-            sinfo.hStdInput = childRead
-            sinfo.hStdOutput = writeStdout
-            sinfo.hStdError = writeStderr
-
-            fname = util.create_tempfile()
-            try:
-                self.__handle, ht, self._pid, tid = win32process.CreateProcess(util.resolvePath("python"), \
-                        "python %s" % fname, None, None, 1, 0, None, None, sinfo)
-                ht.Close()
-                childRead.Close()
-                os.close(childWrite)
-                writeStdout.Close()
-                writeStderr.Close()
-            finally:
-                os.remove(fname)
-    else:
-        def __exec_child(self, child_func, child_args, child_kwds):
-            self._childRet = None
-
-            if not self.__use_pty:
-                pid = os.fork()
-            else:
-                import pty
-                pid, self.__ptyFd = pty.fork()
-
-            self._pid = pid
-            if pid == 0:
-                # Child
-                try:
-                    # Make sure that these two point to the expected streams,
-                    # since they may have been replaced beforehand
-                    sys.stdout = os.fdopen(1, "w")
-                    sys.stderr = os.fdopen(2, "w")
-                    
-                    os.close(self.__parentRead)
-                    os.close(self.__parentWrite)
-                    os.close(self.__readStdout)
-                    os.close(self.__readStderr)
-
-                    if not self.__use_pty:
-                        os.dup2(self.__writeStdout, sys.stdout.fileno())
-                    os.dup2(self.__writeStderr, sys.stderr.fileno())
-                    os.close(self.__writeStdout)
-                    os.close(self.__writeStderr)
-
-                    self.pipe_in = os.fdopen(self.__childRead, "r", 0)
-                    self.pipe_out = os.fdopen(self.__childWrite, "w", 0)
-                    self._files = self.pipe_in, self.pipe_out
-
-                    if self.__passProcess:
-                        args = [self] + child_args
-                    else:
-                        args = child_args
-                    child_func(*args, **child_kwds)
-                    sys.stdout.flush()
-                    sys.stderr.flush()
-                except Exception, err:
-                    self.write_message(_ProcessError("Exception occurred in child process",
-                                                     err, sys.exc_info()[2]), wait=False)
-                    os._exit(1)
-
-                os._exit(0)
-            else:
-                # Parent
-                os.close(self.__childRead)
-                os.close(self.__childWrite)
-                os.close(self.__writeStdout)
-                os.close(self.__writeStderr)
-                if self.__use_pty:
-                    self.__makeNonBlocking(self.__ptyFd)
 
 class EofError(IOError):
     pass
@@ -369,7 +354,6 @@ class ThreadedProcessMonitor(object):
         self._event_pipe_in, self._event_pipe_out = os.fdopen(i, "r", 0), os.fdopen(o, "w", 0)
         self._daemon = daemon
         self._thrd = None
-        self.__use_pty, self.__pass_process = use_pty, pass_process
 
     def __call__(self, child_func, child_args=[], child_kwds={}):
         """ Execute function in child process, monitored in background thread.
@@ -380,8 +364,8 @@ class ThreadedProcessMonitor(object):
         """
         if self.__process is not None:
             raise BusyError("Another process is already being monitored")
-        self.__process = Process(child_func, child_args=child_args, child_kwds=child_kwds, use_pty=\
-                self.__use_pty, pass_process=self.__pass_process)
+        self.__exit_code = None
+        self.__process = Process(child_func, child_args=child_args, child_kwds=child_kwds)
         thrd = self._thrd = threading.Thread(target=self._thrdfunc, daemon=self._daemon)
         thrd.start()
         
@@ -407,7 +391,8 @@ class ThreadedProcessMonitor(object):
 
     def wait(self):
         """ Wait for monitoring thread to finish.
-        @return: The child process exit code.
+        @return: The child process exit code. If the child raised a L{ChildError},
+        this will be None.
         """
         if self._thrd is not None:
             self._thrd.join()
@@ -417,12 +402,11 @@ class ThreadedProcessMonitor(object):
     def _thrdfunc(self):
         import select
         process = self.__process
-        stdout, stderr, childOut = process.stdout, process.stderr, process.pipe_in
-        pollIn, pollOut, pollEx = [stdout, stderr, childOut, self._event_pipe_in], [], []
-        procErr = None
+        stdout, stderr = process.stdout, process.stderr
+        pollIn, pollOut, pollEx = [stdout, stderr, self._event_pipe_in], [], []
         while pollIn:
             # Keep in mind that closed files will be seen as ready by select and cause it to wake up
-            rd, wr, ex = select.select(pollIn, pollOut, pollEx)
+            rd, wr, ex = select.select(pollIn, pollOut, pollEx, 0.01)
 
             if stdout in rd:
                 try: o = stdout.read()
@@ -440,21 +424,6 @@ class ThreadedProcessMonitor(object):
                 else:
                     pollIn.remove(stderr)
 
-            # Read child messages once we have drained the standard streams
-            if childOut in rd and not stdout in rd and not stderr in rd:
-                # Process message from child
-                try:
-                    obj = process.read_message()
-                except EofError:
-                    pollIn.remove(childOut)
-                    pollIn = [] # Child is dead, no need to keep polling
-                else:
-                    if isinstance(obj, _ProcessError):
-                        procErr = obj
-                        break
-                    else:
-                        assert not isinstance(obj, Exception)
-
             if self._event_pipe_in in rd:
                 event = self._event_pipe_in.read(1)
                 assert event in ("t",)
@@ -462,10 +431,14 @@ class ThreadedProcessMonitor(object):
                     # Terminate
                     process.terminate()
                     break
+            
+            if stdout not in pollIn and stderr not in pollIn:
+                # Child exited
+                break
 
-        self.__exit_code = self.__process.wait()
-        self.__process = None
-        if procErr is None:
-            self.sig_finished()
+        try: self.__exit_code = self.__process.wait()
+        except ChildError, err:
+            self.sig_failed(err)
         else:
-            self.sig_failed(ChildError(procErr))
+            self.sig_finished()
+        self.__process = None
