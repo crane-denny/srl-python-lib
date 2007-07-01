@@ -504,4 +504,24 @@ def chmod(path, mode, recursive=False):
     else:
         _chmod(path)
 
+def resolve_path(executable):
+    """ Resolve name of executable into absolute path.
+    @raise NotFound: The executable was not found in path.
+    """
+    import os.path
+    path = os.environ["PATH"].split(os.pathsep)
+    if get_os_name() == Os_Windows:
+        import win32api, pywintypes
+        try: return win32api.FindExecutable(executable)[1]
+        except pywintypes.error: pass
+    else:
+        for d in path:
+            try:
+                exepath = os.path.join(d, executable)
+                if isExecutable(exepath):
+                    return exepath
+            except OSError:
+                pass
+    raise NotFound(executable)
+
 #}
