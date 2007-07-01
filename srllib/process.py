@@ -184,9 +184,9 @@ except Exception, err:
 
         If the process is still alive, it is waited for.
         """
-        os.remove(self.__errpipe_path)
         if self.__exit_rslt is None:
             self.wait()
+        os.remove(self.__errpipe_path)
             
     def poll(self):
         """ Check if child has exited.
@@ -441,4 +441,5 @@ class ThreadedProcessMonitor(object):
             self.sig_failed(err)
         else:
             self.sig_finished()
+        self.__process.close()
         self.__process = None
