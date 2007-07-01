@@ -1,0 +1,1 @@
+* Find out how to make nose ignore srllib.testing when looking for tests (i.e., it picks up testing.run_tests as a test method).

@@ -1,0 +1,19 @@
+06.29.2007 - 0.1.0a2:
+    * New Qt helper class StatefulConnection
+
+06.29.2007 - 0.1.0a1:
+    * Added module "process"
+    * Expanded threading module significantly
+
+06.23.2007 - 0.0.7:
+    * Added OS detection support in util module
+    * Fixed source distribution, to include ez_setup.py
+
+06.15.2007 - 0.0.6:
+    * Bundle ez_setup for users lacking setuptools installation
+
+06.15.2007 - 0.0.5:
+    * Use setuptools in setup script
+
+0.0.4:
+    * Added utility widgets BrowseFile, BrowseDirectory in qtgui package
