@@ -350,20 +350,37 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
             dstPath = replace_root(srcPath, destdir, sourcedir)
             readSoFar = _copy_file(srcPath, dstPath, callback, allBytes, readSoFar)
 
-def create_tempfile(suffix="", prefix="tmp", close=True):
+def create_tempfile(suffix="", prefix="tmp", close=True, content=None):
     """ Create temporary file.
+    
+    The file is opened in R/W mode.
     @param suffix: Optional filename suffix.
     @param prefix: Optional filename prefix.
     @param close: Close the file after creating it?
+    @param content: Optional content to write to file.
     @return: If close path to created temporary file, else temporary file. """
     import tempfile
     (fd, fname) = tempfile.mkstemp(suffix=suffix, prefix=prefix)
+    
     # File should not be automatically deleted
     os.close(fd)
-    if close:
-        return fname
-    f = file(fname, "wb+")
-    return f
+    if not close or content:
+        # Open file directly instead of using fdopen, since the latter will return
+        # a file with a bogus name
+        f = file(fname, "w+")
+        try:
+            if content:
+                f.write(content)
+                # Make sure to reset the file position!
+                f.seek(0)
+        except:
+            f.close()
+            raise
+        if close:
+            f.close()
+            return fname
+        return f
+    return fname
 
 def create_file(name, content="", binary=False):
     """ Create a file, with optional content.
