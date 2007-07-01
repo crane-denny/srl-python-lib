@@ -122,15 +122,20 @@ class FileSystemTest(TestCase):
 
     def test_create_tempfile(self):
         fname = util.create_tempfile()
-        try:
-            self.assert_(isinstance(fname, basestring))
-        finally:
-            os.remove(fname)
+        try: self.assert_(isinstance(fname, basestring))
+        finally: os.remove(fname)
         file_ = util.create_tempfile(close=False)
         try: self.assert_(isinstance(file_, file))
         finally:
             file_.close()
             os.remove(file_.name)
+        file_ = util.create_tempfile(close=False, content="Test")
+        try:
+            self.assertEqual(file_.read(), "Test")
+            file_.write("\nTest")
+            file_.seek(0)
+            self.assertEqual(file_.read(), "Test\nTest")
+        finally: file_.close()
 
     def test_chmod(self):
         dpath = self.__createDir()
