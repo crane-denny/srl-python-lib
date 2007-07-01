@@ -230,7 +230,9 @@ except Exception, err:
             return r
         if get_os_name() == Os_Windows:
             import win32process
-            win32process.TerminateProcess(self.__prcs_handle, 0)
+            # Emulate POSIX behaviour, where the exit code will be the negative
+            # value of the signal that terminated the process
+            win32process.TerminateProcess(self.__prcs_handle, -signal.SIGTERM)
         else:
             try:
                 os.kill(self.pid, signal.SIGTERM)
