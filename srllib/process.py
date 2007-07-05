@@ -45,8 +45,6 @@ class _ProcessError(object):
     def __init__(self, msg, original_exc=None, original_tb=None):
         self.message = msg
         
-        sys.stderr.write("ProcessError: %r\n" % (original_exc,))
-        sys.stderr.flush()
         if original_exc is not None:            
             self.exc_message = str(original_exc)
         else:
