@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """ Test the util module. """
-import os.path, stat
+import os.path, stat, codecs
 
 from srllib.testing import *
 from srllib import util
@@ -207,6 +208,14 @@ class FileSystemTest(TestCase):
     def test_get_os(self):
         self.assertIn(srllib.util.get_os()[0], (srllib.util.Os_Linux,
                 srllib.util.Os_Windows))
+
+    def test_create_file_unicode(self):
+        """ Test creating file with unicode content. """
+        fpath = self._get_tempfname()
+        util.create_file(fpath, content=u"æøå", encoding="utf-8")
+        f = codecs.open(fpath, encoding="utf-8")
+        try: self.assertEqual(f.read(), u"æøå")
+        finally: f.close()
 
     def __createDir(self):
         dpath = self._get_tempdir()
