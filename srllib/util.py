@@ -4,7 +4,8 @@ system
 @var Os_Windows: Tuple of identifiers for known versions of the Windows
 operating system
 """
-import stat, shutil, os.path, imp, platform, fnmatch, sys, errno, platform
+import stat, shutil, os.path, imp, platform, fnmatch, sys, errno, platform, \
+        codecs
 try: import hashlib
 except ImportError: import sha
 from error import *
@@ -364,22 +365,25 @@ def create_tempfile(suffix="", prefix="tmp", close=True):
     f = file(fname, "wb+")
     return f
 
-def create_file(name, content="", binary=False):
+def create_file(name, content="", binary=False, encoding=None):
     """ Create a file, with optional content.
     @param name: Filename.
     @param content: Optional content to write to file.
     @param binary: Create file in binary mode (makes a difference on Windows)?
+    @param encoding: Specify text encoding of file content.
     @return: Path to created file.
     """
     mode = "w"
     if binary:
         mode += "b"
-    f = file(name, mode)
+    if encoding is None:
+        f = file(name, mode)
+    else:
+        f = codecs.open(name, mode, encoding)
     try:
         if content:
             f.write(content)
-    finally:
-        f.close()
+    finally: f.close()
 
     return name
 
