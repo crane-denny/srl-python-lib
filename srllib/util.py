@@ -4,7 +4,8 @@ system
 @var Os_Windows: Tuple of identifiers for known versions of the Windows
 operating system
 """
-import stat, shutil, os.path, imp, platform, fnmatch, sys, errno
+import stat, shutil, os.path, imp, platform, fnmatch, sys, errno, \
+        codecs
 try: import hashlib
 except ImportError: import sha
 from error import *
@@ -136,7 +137,7 @@ def replace_root(path, new_root, orig_root=None):
     """
     if orig_root is None:
         os_name = get_os_name()
-        if os_name in Os_Posix:
+        if os_name in OsCollection_Posix:
             orig_root = "/"
         elif os_name == Os_Windows:
             orig_root = path.split(os.path.sep, 1)[0] + os.path.sep
@@ -384,22 +385,25 @@ def create_tempfile(suffix="", prefix="tmp", close=True, content=None):
         return f
     return fname
 
-def create_file(name, content="", binary=False):
+def create_file(name, content="", binary=False, encoding=None):
     """ Create a file, with optional content.
     @param name: Filename.
     @param content: Optional content to write to file.
     @param binary: Create file in binary mode (makes a difference on Windows)?
+    @param encoding: Specify text encoding of file content.
     @return: Path to created file.
     """
     mode = "w"
     if binary:
         mode += "b"
-    f = file(name, mode)
+    if encoding is None:
+        f = file(name, mode)
+    else:
+        f = codecs.open(name, mode, encoding)
     try:
         if content:
             f.write(content)
-    finally:
-        f.close()
+    finally: f.close()
 
     return name
 
