@@ -22,8 +22,6 @@ def no_op(*args, **kwds):
     """ Utility no-op function that accepts any arguments/keywords. """
     pass
 
-Checksum_Hex, Checksum_Binary = 0, 1
-
 def _make_decorator(func):
     """ Wrap a test decorator to replicate metadata of the decorated function.
     """
@@ -35,6 +33,8 @@ def _make_decorator(func):
         return decorated
     return decorate
 
+Checksum_Hex, Checksum_Binary = 0, 1
+
 def get_checksum(path, format=Checksum_Hex):
     """ Obtain the sha1 checksum of a file or directory.
 
@@ -42,6 +42,7 @@ def get_checksum(path, format=Checksum_Hex):
     in the directory tree.
     @param path: Path to file or directory
     @param format: One of L{Checksum_Hex}, L{Checksum_Binary}.
+    @raise ValueError: Invalid format.
     @return: If hexadecimal, a 40 byte hexadecimal digest. If binary, a 20byte binary digest.
     """
     if format not in (Checksum_Hex, Checksum_Binary):
@@ -132,17 +133,26 @@ def replace_root(path, new_root, orig_root=None):
     """ Replace one root directory component of a pathname with another.
     @param path: The pathname.
     @param new_root: The root to replace the old root component with.
-    @param orig_root: The original root component to replace, if None the filesystem root.
+    @param orig_root: The original root component to replace, if C{None} the
+    first directory component.
     @return: The new pathname.
     """
+    if os.path.sep not in path:
+        # No directory component
+        return path
+    
     if orig_root is None:
-        os_name = get_os_name()
-        if os_name in OsCollection_Posix:
-            orig_root = "/"
-        elif os_name == Os_Windows:
-            orig_root = path.split(os.path.sep, 1)[0] + os.path.sep
+        # Find first dir component
+        orig_root = ""
+        assert path
+        for c in path:
+            if c != os.path.sep:
+                orig_root += c
+            else:
+                break
     else:
         orig_root = os.path.normpath(orig_root)
+    if not orig_root or orig_root[-1] != os.path.sep:
         orig_root += os.path.sep
     relPath = path[len(orig_root):]
     return os.path.join(new_root, relPath)
@@ -210,7 +220,7 @@ def move_file(src, dest, force=False):
     platforms.
     @param force: On Windows, overwrite write-protected destination?
     """
-    if platform.system() == "Windows" and os.path.isfile(dest):
+    if get_os_name() == Os_Windows and os.path.isfile(dest):    #pragma: optional
         # Necessary on Windows
         if force:
             dstMode = get_file_permissions(dest)
@@ -223,16 +233,23 @@ def clean_path(path):
     """ Return a clean, absolute path. """
     return os.path.abspath(os.path.normpath(path))
 
-def walkdir(path):
+def walkdir(path, errorfunc=None):
     """ Wrapper around os.walk which checks whether we are permitted to traverse.
+    @param errorfunc: Function to handle error when a directory can't be
+    traversed. Return False from this to ignore directory.
     @raise PermissionsError: Missing permission to traverse directory.
     """
-    if not os.access(path, os.R_OK):
+    def handle_err(path):
         raise PermissionsError(path)
+    if errorfunc is None:
+        errorfunc = handle_err
+        
+    if not os.access(path, os.R_OK):
+        errorfunc(path)
     for dpath, dnames, fnames in os.walk(path):
         for d in dnames:
             if not os.access(os.path.join(dpath, d), os.R_OK):
-                raise PermissionsError(os.path.join(dpath, d))
+                errorfunc(os.path.join(dpath, d))
         yield dpath, dnames, fnames
 
 @_raise_permissions
@@ -353,7 +370,8 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
             dstPath = replace_root(srcPath, destdir, sourcedir)
             readSoFar = _copy_file(srcPath, dstPath, callback, allBytes, readSoFar)
 
-def create_tempfile(suffix="", prefix="tmp", close=True, content=None):
+def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
+        encoding=None):
     """ Create temporary file.
     
     The file is opened in R/W mode.
@@ -361,6 +379,7 @@ def create_tempfile(suffix="", prefix="tmp", close=True, content=None):
     @param prefix: Optional filename prefix.
     @param close: Close the file after creating it?
     @param content: Optional content to write to file.
+    @param encoding: Specify text encoding for file.
     @return: If close path to created temporary file, else temporary file. """
     import tempfile
     (fd, fname) = tempfile.mkstemp(suffix=suffix, prefix=prefix)
@@ -370,7 +389,10 @@ def create_tempfile(suffix="", prefix="tmp", close=True, content=None):
     if not close or content:
         # Open file directly instead of using fdopen, since the latter will return
         # a file with a bogus name
-        f = file(fname, "w+")
+        if encoding is None:
+            f = file(fname, "w+")
+        else:
+            f = codecs.open(fname, "w+", encoding)
         try:
             if content:
                 f.write(content)
@@ -385,12 +407,14 @@ def create_tempfile(suffix="", prefix="tmp", close=True, content=None):
         return f
     return fname
 
-def create_file(name, content="", binary=False, encoding=None):
+def create_file(name, content="", binary=False, encoding=None, close=True):
     """ Create a file, with optional content.
     @param name: Filename.
     @param content: Optional content to write to file.
     @param binary: Create file in binary mode (makes a difference on Windows)?
     @param encoding: Specify text encoding of file content.
+    @param close: Close file? If true, the file is returned, else its name is
+    returned.
     @return: Path to created file.
     """
     mode = "w"
@@ -403,77 +427,89 @@ def create_file(name, content="", binary=False, encoding=None):
     try:
         if content:
             f.write(content)
-    finally: f.close()
-
-    return name
+    except:
+        f.close()
+        raise
+    if close:
+        f.close()
+        return name
+    return f
 
 def _sig(st):
     return (stat.S_IFMT(st.st_mode), st.st_size, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid)
 
-def compare_dirs(dir0, dir1, shallow=True, ignore=[], fileCheckFunc=None):
+def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
     """ Check that the contents of two directories match.
 
     Contents that mismatch and content that can't be found in one directory or can't be checked somehow are returned
     separately.
     @param shallow: Just check the stat signature instead of reading content
     @param ignore: Names of files(/directories) to ignore
-    @param fileCheckFunc: Optionally provide function for deciding whether two files are alike.
+    @param filecheck_func: Optionally provide function for deciding whether
+    two files are alike.
     @return: Pair of mismatched and failed pathnames, respectively
     """
-    def checkFiles(file0, file1):
-        return get_checksum(file0, format=Checksum_Binary) == get_checksum(file1, format=Checksum_Binary)
+    def checkfiles(path0, path1):
+        chksum0, chksum1 = get_checksum(path0, format=Checksum_Binary), get_checksum(
+                path1, format=Checksum_Binary)
+        r = chksum0 == chksum1
+        if not r:
+            sys.stderr.write("%s mismatched against %s because %s != %s\n" %
+                    (path0, path1, chksum0, chksum1))
+        return r
 
-    if fileCheckFunc is None:
-        fileCheckFunc = checkFiles
+    if filecheck_func is None:
+        filecheck_func = checkfiles
     mismatch = []
     error = []
-    if len(os.listdir(dir0)) == 0:
-        return mismatch, os.listdir(dir1)
     if not os.path.exists(dir0):
         raise ValueError("First directory missing: '%s'" % (dir0,))
     if not os.path.exists(dir1):
         raise ValueError("Second directory missing: '%s'" % (dir1,))
+    if len(os.listdir(dir0)) == 0:
+        # Indicate any files in dir1 as erroneus
+        return mismatch, os.listdir(dir1)
     
     if dir0[-1] != os.path.sep:
         dir0 = dir0 + os.path.sep
-    for dpath, dnames, fnames in walkdir(dir0):
+    
+    def handle_err(dpath):
+        # Don't traverse this directory
+        return False
+    for dpath, dnames, fnames in walkdir(dir0, handle_err):
+        
+        # Filter out files to ignore
         for ign in ignore:
             while ign in dnames:
                 dnames.remove(ign)
             while ign in fnames:
                 fnames.remove(ign)
 
-        relDir = dpath[len(dir0):]
-        assert relDir != dpath, dpath
+        reldir = dpath[len(dir0):]
+        assert reldir != dpath, dpath
         
         contents0 = dnames + fnames
-        contents1 = [e for e in os.listdir(os.path.join(dir1, relDir)) if not e in ignore]
+        contents1 = [e for e in os.listdir(os.path.join(dir1, reldir)) if not e in ignore]
 
         lnth0, lnth1 = len(contents0), len(contents1)
         if lnth0 < lnth1:
             for name in contents1:
                 if name not in contents0:
-                    error.append(os.path.join(relDir, name))
+                    error.append(os.path.join(reldir, name))
         
-        import stat
         for name in contents0:
-            relPath = os.path.join(relDir, name)
+            relpath = os.path.join(reldir, name)
             try:
-                path0, path1 = os.path.join(dir0, relPath), os.path.join(dir1, relPath)
+                path0, path1 = os.path.join(dir0, relpath), os.path.join(dir1, relpath)
                 st0, st1 = os.lstat(path0), os.lstat(path1)
-                mode0, mode1 = stat.S_IMODE(st0.st_mode), stat.S_IMODE(st1.st_mode)
                 mismatched = False
                 s0, s1 = _sig(st0), _sig(st1)
                 if name in fnames:
                     if s0 != s1:
                         sys.stderr.write("%s mismatched because %r != %r\n" % (path1, s0, s1))
                         mismatched = True
-                        shutil.copytree(dir0, "/tmp/mismatch")
                     elif not shallow:
-                        chksum0, chksum1 = get_checksum(path0), get_checksum(path1)
-                        mismatched = get_checksum(path0) != get_checksum(path1)
-                        if mismatched:
-                            sys.stderr.write("%s mismatched against %s because %s != %s\n" % (path0, path1, chksum0, chksum1))
+                        mismatched = not filecheck_func(path0, path1)
                 else:
                     assert name in dnames
                     mismatched = s0[2:] != s1[2:]   # Ignore format and size
@@ -482,11 +518,11 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[], fileCheckFunc=None):
                         sys.stderr.write("Mismatched: %r, %r\n" % (s0[1:], s1[1:]))
                         dnames.remove(name)
                 if mismatched:
-                    mismatch.append(relPath)
+                    mismatch.append(relpath)
             except OSError:
                 if name in dnames:
                     dnames.remove(name)
-                error.append(relPath)
+                error.append(relpath)
 
     return mismatch, error
 
@@ -533,7 +569,7 @@ def resolve_path(executable):
     """
     import os.path
     path = os.environ["PATH"].split(os.pathsep)
-    if get_os_name() == Os_Windows:
+    if get_os_name() == Os_Windows:    # pragma: optional
         import win32api, pywintypes
         try: return win32api.FindExecutable(executable)[1]
         except pywintypes.error: pass
@@ -541,7 +577,7 @@ def resolve_path(executable):
         for d in path:
             try:
                 exepath = os.path.join(d, executable)
-                if isExecutable(exepath):
+                if os.access(exepath, os.X_OK):
                     return exepath
             except OSError:
                 pass
