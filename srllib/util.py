@@ -173,29 +173,54 @@ class DirNotEmpty(SrlError):
     pass
 
 @_raise_permissions
-def remove_dir(path, ignoreErrors=False, force=False, recurse=True):
+def remove_dir(path, ignore_errors=False, force=False, recurse=True):
     """ Remove directory, optionally a whole directory tree (recursively).
     
-    @param ignoreErrors: Ignore failed deletions?
+    @param ignore_errors: Ignore failed deletions?
     @param force: On Windows, force deletion of read-only files?
     @param recurse: Delete also contents, recursively?
+    @raise ValueError: The directory doesn't exist.
     @raise PermissionsError: Missing file-permissions.
     @raise DirNotEmpty: Directory was not empty, and recurse was not specified.
     """
     def rmdir(path):
-        if force and platform.system() == "Windows":
-            # On POSIX, it is the permissions of the containing directory that matters when deleting
-            mode = get_file_permissions(path)
-            if not mode & stat.S_IWRITE:
-                mode |= stat.S_IWRITE
-            chmod(path, mode)
-        try: os.rmdir(path)
-        except OSError, err:
-            if not ignoreErrors:
-                raise
+        chmodded = None
+        if force:
+            if get_os_name() == Os_Windows:
+                mode = get_file_permissions(path)
+                if not mode & stat.S_IWRITE:
+                    mode |= stat.S_IWRITE
+                chmod(path, mode)
+            elif get_os_name() in OsCollection_Posix:
+                # On POSIX, it is the permissions of the containing directory
+                # that matters when deleting
+                old_mode = get_file_permissions(os.path.dirname(path))
+                if not old_mode & stat.S_IWRITE:
+                    chmodded = os.path.dirname(path)
+                    chmod(chmodded, old_mode | stat.S_IWRITE)
+
+        try:
+            assert not os.listdir(path), os.listdir(path)
+            try: os.rmdir(path)
+            except OSError, err:
+                if not ignore_errors:
+                    raise
+        finally:
+            if chmodded:
+                chmod(chmodded, old_mode)
+            
+    def handle_err(dpath):
+        if not force:
+            raise PermissionsError(dpath)
+        os.chmod(dpath, stat.S_IEXEC | stat.S_IREAD)
+        return True
+    
+    if not os.path.exists(path):
+        raise ValueError(path)
 
     if recurse:
-        for dpath, dnames, fnames in os.walk(path, topdown=False):
+        for dpath, dnames, fnames in walkdir(path, topdown=False, errorfunc=
+                handle_err):
             for d in dnames:
                 rmdir(os.path.join(dpath, d))
             for f in fnames:
@@ -205,6 +230,7 @@ def remove_dir(path, ignoreErrors=False, force=False, recurse=True):
             raise DirNotEmpty
     rmdir(path)
 
+@_raise_permissions
 def get_file_permissions(path):
     """ Get permissions flags (bitwise) for a file/directory.
     
@@ -233,24 +259,47 @@ def clean_path(path):
     """ Return a clean, absolute path. """
     return os.path.abspath(os.path.normpath(path))
 
-def walkdir(path, errorfunc=None):
-    """ Wrapper around os.walk which checks whether we are permitted to traverse.
+def _walkdir_handle_err(path):
+    raise PermissionsError(path)
+
+@_raise_permissions
+def walkdir(path, errorfunc=None, topdown=True):
+    """ Directory tree generator.
+    
+    This function works in much the same way as os.walk, but expands somewhat
+    on that.
+    @param path: Directory to traverse.
     @param errorfunc: Function to handle error when a directory can't be
     traversed. Return False from this to ignore directory.
+    @param topdown: Traverse in topdown fashion?
     @raise PermissionsError: Missing permission to traverse directory.
     """
-    def handle_err(path):
-        raise PermissionsError(path)
     if errorfunc is None:
-        errorfunc = handle_err
+        errorfunc = _walkdir_handle_err
         
-    if not os.access(path, os.R_OK):
-        errorfunc(path)
-    for dpath, dnames, fnames in os.walk(path):
-        for d in dnames:
-            if not os.access(os.path.join(dpath, d), os.R_OK):
-                errorfunc(os.path.join(dpath, d))
-        yield dpath, dnames, fnames
+    mode = get_file_permissions(path)
+    if not mode & stat.S_IREAD:
+        if not errorfunc(path):
+            # Ignore directory
+            return
+    
+    dnames, fnames = [], []
+    for e in os.listdir(path):
+        if os.path.isdir(os.path.join(path, e)):
+            dnames.append(e)
+        else:
+            fnames.append(e)
+            
+    if topdown:
+        yield path, dnames, fnames
+    for d in dnames:
+        if os.path.islink(os.path.join(path, d)):
+            continue
+        for x in walkdir(os.path.join(path, d), errorfunc=errorfunc,
+                topdown=topdown):
+            yield x
+    if not topdown:
+        yield path, dnames, fnames
 
 @_raise_permissions
 def _copy_file(srcPath, dstPath, callback, totalBytes=None, readSoFar=long(0)):
@@ -293,9 +342,24 @@ def copy_file(sourcePath, destPath, callback=no_op):
 @_raise_permissions
 def remove_file(path, force=False):
     """ Remove a file.
+    @param force: Force deletion of read-only file?
     @raise PermissionsError: Missing file-permissions.
     """
-    os.remove(path)
+    chmodded = None
+    if force:
+        if get_os_name() == Os_Windows:
+            chmod(path, stat.S_IWRITE)
+        elif get_os_name() in OsCollection_Posix:
+            # On POSIX, directory permissions matter
+            dpath = os.path.dirname(path)
+            old_mode = get_file_permissions(dpath)
+            chmodded = dpath
+            chmod(dpath, old_mode | stat.S_IWRITE)
+    
+    try: os.remove(path)
+    finally:
+        if chmodded:
+            chmod(chmodded, old_mode)
 
 def remove_file_or_dir(path, force=False, recurse=True):
     """ Remove a filesystem object, whether it is a file or a directory.
@@ -383,27 +447,32 @@ def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
     @return: If close path to created temporary file, else temporary file. """
     import tempfile
     (fd, fname) = tempfile.mkstemp(suffix=suffix, prefix=prefix)
-    
     # File should not be automatically deleted
     os.close(fd)
+    
     if not close or content:
         # Open file directly instead of using fdopen, since the latter will return
         # a file with a bogus name
-        if encoding is None:
-            f = file(fname, "w+")
-        else:
-            f = codecs.open(fname, "w+", encoding)
         try:
-            if content:
-                f.write(content)
-                # Make sure to reset the file position!
-                f.seek(0)
+            if encoding is None:
+                f = file(fname, "w+")
+            else:
+                f = codecs.open(fname, "w+", encoding)
+            try:
+                if content:
+                    f.write(content)
+                    # Make sure to reset the file position!
+                    f.seek(0)
+            except:
+                f.close()
+                raise
+            if close:
+                f.close()
+                return fname
         except:
-            f.close()
+            # Make sure to delete created file
+            os.remove(fname)
             raise
-        if close:
-            f.close()
-            return fname
         return f
     return fname
 
@@ -528,29 +597,34 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
 
 @_raise_permissions
 def chmod(path, mode, recursive=False):
-    """ Wrapper around os.chmod, which allows for recursive modification of a directory.
+    """ Wrapper around os.chmod, which allows for recursive modification of a
+    directory tree.
     @param path: Path to modify.
     @param mode: New permissions mode.
     @param recursive: Apply recursively, if directory?
     @raise PermissionsError: Missing file-permissions.
     """
-    madeExec = []
+    made_exec = []
 
-    def _chmod(path, fixExec=False):
-        newMode = mode
-        if fixExec and os.path.isdir(path) and not mode & stat.S_IEXEC:
+    def _chmod(path, fixexec=False):
+        newmode = mode
+        if fixexec and os.path.isdir(path) and not mode & stat.S_IEXEC:
             # Make the directory accessible
-            newMode |= stat.S_IEXEC
-            madeExec.append(path)
+            newmode |= stat.S_IEXEC
+            made_exec.append(path)
 
-        os.chmod(path, newMode)
+        os.chmod(path, newmode)
 
     if recursive and os.path.isdir(path):
+        seen = set()
         for dpath, dnames, fnames in walkdir(path):
-            _chmod(dpath, fixExec=True)
+            assert dpath not in seen, "Already entered %s" % (dpath,)
+            seen.add(dpath)
+            _chmod(dpath, fixexec=True)
 
             for d in dnames[:]:
                 # Chmod empty dirs now
+                os.listdir(os.path.join(dpath, d))
                 if not os.listdir(os.path.join(dpath, d)):
                     _chmod(os.path.join(dpath, d))
                     dnames.remove(d)
@@ -558,7 +632,7 @@ def chmod(path, mode, recursive=False):
                 _chmod(os.path.join(dpath, f))
 
         # Now finalize the executable bit in depth-first fashion
-        for dpath in reversed(madeExec):
+        for dpath in reversed(made_exec):
             _chmod(dpath)
     else:
         _chmod(path)
