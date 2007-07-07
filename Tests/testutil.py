@@ -33,7 +33,7 @@ class FileSystemTest(TestCase):
         self.assertEqual(txt, "Test")
         self.assertNot(os.path.exists(src.name))
 
-    def test_removedir(self):
+    def test_remove_dir(self):
         dpath = self.__create_dir()
         self.assertRaises(util.DirNotEmpty, util.remove_dir, dpath, recurse=False)
         util.remove_dir(dpath, recurse=True)
@@ -43,6 +43,17 @@ class FileSystemTest(TestCase):
         dpath = self._get_tempdir()
         util.remove_dir(dpath, recurse=False)
         self.assertNot(os.path.exists(dpath))
+        
+    def test_remove_dir_force(self):
+        """ Test removing directory with read-only contents. """
+        dpath = self.__create_dir()
+        util.chmod(dpath, 0, recursive=True)
+        util.remove_dir(dpath, force=True)
+        self.assertNot(os.path.exists(dpath))
+        
+    def test_remove_dir_missing(self):
+        """ Test removing a missing directory. """
+        self.assertRaises(ValueError, util.remove_dir, "nosuchdir")
 
     def test_copydir(self):
         """ Test copying a directory.
@@ -123,15 +134,15 @@ class FileSystemTest(TestCase):
         self.assertEqual(txt, "Test")
 
     def test_create_tempfile(self):
-        fname = util.create_tempfile()
+        fname = self.__create_tempfile()
         try: self.assert_(isinstance(fname, basestring))
         finally: os.remove(fname)
-        file_ = util.create_tempfile(close=False)
+        file_ = self.__create_tempfile(close=False)
         try: self.assert_(isinstance(file_, file))
         finally:
             file_.close()
             os.remove(file_.name)
-        file_ = util.create_tempfile(close=False, content="Test")
+        file_ = self.__create_tempfile(close=False, content="Test")
         try:
             txt = file_.read()
             self.assertEqual(txt, "Test")
@@ -144,7 +155,7 @@ class FileSystemTest(TestCase):
         finally: file_.close()
         
     def test_create_tempfile_invalid_encoding(self):
-        self.assertRaises(UnicodeDecodeError, util.create_tempfile,
+        self.assertRaises(UnicodeDecodeError, self.__create_tempfile,
                 content="æøå", encoding="ascii")
 
     def test_chmod(self):
@@ -203,6 +214,14 @@ class FileSystemTest(TestCase):
         else:
             util.chmod(dpath, 0700)
         util.remove_file(fpath)
+        self.assertNot(os.path.exists(fpath))
+        
+    def test_remove_file_force(self):
+        """ Test removing a read-only file forcefully. """
+        dpath = self.__create_dir()
+        fpath = os.path.join(dpath, "test")
+        util.chmod(dpath, stat.S_IEXEC | stat.S_IREAD, recursive=True)
+        util.remove_file(fpath, force=True)
         self.assertNot(os.path.exists(fpath))
 
     def test_remove_file_or_dir(self):
@@ -300,6 +319,7 @@ class FileSystemTest(TestCase):
                 os.path.join(os.path.abspath("file")))
 
     def __create_dir(self):
+        """ Create directory with contents. """
         dpath = self._get_tempdir()
         # We put some content inside the created files, since read permissions
         # will not affect empty files (i.e., copying an empty file won't
@@ -308,6 +328,11 @@ class FileSystemTest(TestCase):
         os.mkdir(os.path.join(dpath, "testdir"))
         util.create_file(os.path.join(dpath, "testdir", "test"), "Test")
         return dpath
+    
+    def __create_tempfile(self, *args, **kwds):
+        fpath = util.create_tempfile(*args, **kwds)
+        self._tempfiles.append(fpath)
+        return fpath
 
 class VariousTest(TestCase):
     """ Test various functionality. """
@@ -331,8 +356,11 @@ class VariousTest(TestCase):
     def test_get_module(self):
         """ Test the get_module function. """
         fpath = self._get_tempfname(content="test = True\n", suffix=".py")
-        m = util.get_module(os.path.splitext(os.path.basename(fpath))[0],
+        try: m = util.get_module(os.path.splitext(os.path.basename(fpath))[0],
                 os.path.dirname(fpath))
+        finally:
+            # Remove .pyc
+            os.remove(fpath + "c")
         self.assertEqual(m.test, True)
         
     def test_get_module_missing(self):
