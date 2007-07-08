@@ -505,17 +505,19 @@ def create_file(name, content="", binary=False, encoding=None, close=True):
     return f
 
 def _sig(st):
-    return (stat.S_IFMT(st.st_mode), st.st_size, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid)
+    return (stat.S_IFMT(st.st_mode), st.st_size, stat.S_IMODE(st.st_mode),
+            st.st_uid, st.st_gid)
 
 def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
     """ Check that the contents of two directories match.
 
-    Contents that mismatch and content that can't be found in one directory or can't be checked somehow are returned
-    separately.
+    Contents that mismatch and content that can't be found in one directory or
+    can't be checked somehow are returned separately.
     @param shallow: Just check the stat signature instead of reading content
     @param ignore: Names of files(/directories) to ignore
     @param filecheck_func: Optionally provide function for deciding whether
     two files are alike.
+    @raise ValueError: One of the directories are missing.
     @return: Pair of mismatched and failed pathnames, respectively
     """
     def checkfiles(path0, path1):
@@ -575,7 +577,8 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
                 s0, s1 = _sig(st0), _sig(st1)
                 if name in fnames:
                     if s0 != s1:
-                        sys.stderr.write("%s mismatched because %r != %r\n" % (path1, s0, s1))
+                        sys.stderr.write("%s mismatched because %r != %r\n" %
+                                (path1, s0, s1))
                         mismatched = True
                     elif not shallow:
                         mismatched = not filecheck_func(path0, path1)
