@@ -571,7 +571,8 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
         for name in contents0:
             relpath = os.path.join(reldir, name)
             try:
-                path0, path1 = os.path.join(dir0, relpath), os.path.join(dir1, relpath)
+                path0, path1 = os.path.join(dir0, relpath), os.path.join(dir1,
+                        relpath)
                 st0, st1 = os.lstat(path0), os.lstat(path1)
                 mismatched = False
                 s0, s1 = _sig(st0), _sig(st1)

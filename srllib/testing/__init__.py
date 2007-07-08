@@ -6,15 +6,6 @@ import mock, srllib.util
 # This flag makes unittest omit our test methods in failure tracebacks, like the standard test methods.
 __unittest = True
 
-def setUp():
-    """ Module-level setup.
-    
-    Implement this so we can reload modules that should be analyzed for
-    coverage after coverage has started!
-    """
-    for m in (srllib, srllib.util):
-        reload(m)
-
 class TestCase(unittest.TestCase):
     """ Extended TestCase baseclass.
     @ivar _orig_attrs: Dictionary of object attributes to reset on teardown.
