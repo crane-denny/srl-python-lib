@@ -205,10 +205,10 @@ class Thread(object):
         global _exc_handler
         self.__exc_handler = _exc_handler
 
-        """
+        '''
         for mthd in ("join",):
             setattr(self, mthd, getattr(self._thrd, mthd))
-            """
+            '''
             
         if daemon:
             self.daemon = True

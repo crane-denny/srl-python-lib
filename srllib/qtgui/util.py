@@ -37,7 +37,7 @@ class BrowseFile(_Browse):
 
     @cvar DefaultBrowseTooltip: Default tooltip for browse button.
     @ivar path_edit: QLineEdit for displaying/entering filepath.
-    @ivar: browse_button: L{BrowseFileButton} for opening browse dialog.
+    @ivar browse_button: L{BrowseFileButton} for opening browse dialog.
     """
     DefaultBrowseTooltip = "Browse for file"
 
@@ -65,7 +65,7 @@ class BrowseDirectory(_Browse):
 
     @cvar DefaultBrowseTooltip: Default tooltip for browse button.
     @ivar path_edit: QLineEdit for displaying/entering filepath.
-    @ivar: browse_button: L{BrowseFileButton} for opening browse dialog.
+    @ivar browse_button: L{BrowseFileButton} for opening browse dialog.
     """
     DefaultBrowseTooltip = "Browse for directory"
 
