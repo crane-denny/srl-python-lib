@@ -444,7 +444,7 @@ def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
     @param close: Close the file after creating it?
     @param content: Optional content to write to file.
     @param encoding: Specify text encoding for file.
-    @return: If close path to created temporary file, else temporary file. """
+    @return: If C{close} path to created temporary file, else temporary file. """
     import tempfile
     (fd, fname) = tempfile.mkstemp(suffix=suffix, prefix=prefix)
     # File should not be automatically deleted
