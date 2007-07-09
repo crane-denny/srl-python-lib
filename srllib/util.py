@@ -407,6 +407,26 @@ def create_file(name, content="", binary=False, encoding=None):
 
     return name
 
+def read_file(name, binary=False, encoding=None):
+    """ Read content of file.
+    @param name: Filename.
+    @param binary: Open in binary mode (makes a difference on Windows)?
+    @param encoding: Optionally specify text encoding of file content.
+    @return: File content as string.
+    """
+    if not binary:
+        mode = "rb"
+    else:
+        mode = "r"
+    if encoding is None:
+        f = file(name, mode)
+    else:
+        f = codecs.open(name, mode=mode, encoding=encoding)
+    try: content = f.read()
+    finally: f.close()
+    
+    return content    
+
 def _sig(st):
     return (stat.S_IFMT(st.st_mode), st.st_size, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid)
 

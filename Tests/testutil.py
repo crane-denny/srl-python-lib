@@ -216,6 +216,14 @@ class FileSystemTest(TestCase):
         f = codecs.open(fpath, encoding="utf-8")
         try: self.assertEqual(f.read(), u"æøå")
         finally: f.close()
+        
+    def test_read_file_unicode(self):
+        """ Test reading a file with unicode content. """
+        fpath = self._get_tempfname()
+        f = codecs.open(fpath, encoding="utf-8", mode="wb")
+        try: f.write(u"Æøå")
+        finally: f.close()
+        self.assertEqual(util.read_file(fpath, encoding="utf-8"), u"Æøå")
 
     def __createDir(self):
         dpath = self._get_tempdir()
