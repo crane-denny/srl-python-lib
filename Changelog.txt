@@ -1,3 +1,6 @@
+07.00.2007 - 0.1.0a3:
+    * New function util.read_file
+
 07.08.2007 - 0.1.0a2:
     * Cleaned up process module
     * New Qt helper class StatefulConnection
