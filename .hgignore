@@ -8,3 +8,4 @@ dist
 setup.cfg
 \..*project
 \.settings
+\.coverage

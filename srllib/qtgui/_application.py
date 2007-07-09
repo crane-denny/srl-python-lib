@@ -44,7 +44,7 @@ class Application(QApplication):
         QObject.connect(timer, SIGNAL("timeout()"), self.__slot_timed_out)
         timer.start(20)
 
-    # Qt methods
+    #{ Qt methods
 
     @staticmethod
     def setOverrideCursor(cursor):

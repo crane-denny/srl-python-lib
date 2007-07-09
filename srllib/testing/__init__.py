@@ -7,22 +7,28 @@ import mock, srllib.util
 __unittest = True
 
 class TestCase(unittest.TestCase):
+    """ Extended TestCase baseclass.
+    @ivar _orig_attrs: Dictionary of object attributes to reset on teardown.
+    @ivar _tempfiles: List of temporary files to delete on teardown.
+    @ivar _tempdirs: List of temporary directories to delete on teardown.
+    """
     def __init__(self, *args, **kwds):
         unittest.TestCase.__init__(self, *args, **kwds)
 
     def setUp(self):
         # from conduit import mythreading
         # mythreading.registerExceptionHandler(self._exception_handler)
-        self.__connections, self._origAttrs, self.__tempFiles, self.__tempDirs = [], {}, [], []
+        self.__connections, self._orig_attrs, self._tempfiles, \
+                self._tempdirs = [], {}, [], []
 
     def tearDown(self):
-        for k, v in self._origAttrs.items():
+        for k, v in self._orig_attrs.items():
             obj, attr = k
             val = v
             setattr(obj, attr, val)
         for sig, slt in self.__connections:
             sig.disconnect(slt)
-        for ftemp in self.__tempFiles:
+        for ftemp in self._tempfiles:
             if isinstance(ftemp, file):
                 ftemp.close()
                 fname = ftemp.name
@@ -30,9 +36,10 @@ class TestCase(unittest.TestCase):
                 fname = ftemp
             try: os.remove(fname)
             except OSError: pass
-        for dtemp in self.__tempDirs:
-            try: shutil.rmtree(dtemp)
-            except OSError: pass
+        for dtemp in self._tempdirs:
+            if not os.path.exists(dtemp):
+                continue
+            srllib.util.remove_dir(dtemp, True, True)
 
         # Reset Mock register
         mock.Mock.instances.clear()
@@ -105,8 +112,8 @@ class TestCase(unittest.TestCase):
         @param attr: Name of attribute to change
         @param val: The intended value of the attribute
         """
-        if not (obj, attr) in self._origAttrs:
-            self._origAttrs[(obj, attr)] = getattr(obj, attr)
+        if not (obj, attr) in self._orig_attrs:
+            self._orig_attrs[(obj, attr)] = getattr(obj, attr)
         setattr(obj, attr, val)
 
     def _set_module_attr(self, mdl, attr, val):
@@ -129,7 +136,7 @@ class TestCase(unittest.TestCase):
         self._set_attr(m, attr, val)
 
     def _restore_attr(self, obj, attr):
-        val = self._origAttrs.pop((obj, attr))
+        val = self._orig_attrs.pop((obj, attr))
         setattr(obj, attr, val)
 
     def _restore_module_attr(self, mdl, attr):
@@ -165,18 +172,18 @@ class TestCase(unittest.TestCase):
 
     def _get_tempfname(self, *args, **kwds):
         ftemp = srllib.util.create_tempfile(*args, **kwds)
-        self.__tempFiles.append(ftemp)
+        self._tempfiles.append(ftemp)
         return ftemp
 
     def _get_tempfile(self, *args, **kwds):
         ftemp = srllib.util.create_tempfile(close=False, *args, **kwds)
-        self.__tempFiles.append(ftemp)
+        self._tempfiles.append(ftemp)
         return ftemp
 
     def _get_tempdir(self, *args, **kwds):
         """ Create temporary directory that is removed on tearDown. """
         dtemp = tempfile.mkdtemp(*args, **kwds)
-        self.__tempDirs.append(dtemp)
+        self._tempdirs.append(dtemp)
         return dtemp
 
 class TestPersistent(TestCase):
