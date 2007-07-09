@@ -439,7 +439,7 @@ class ThreadedProcessMonitor(object):
                     # Terminate
                     process.terminate()
                     break
-            
+
             if stdout not in pollIn and stderr not in pollIn:
                 # Child exited
                 break
