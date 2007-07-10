@@ -147,7 +147,6 @@ class Mock(object):
         if self.realClassMethods == None:
             return
         if not self.realClassMethods.has_key(name):
-            print self.realClassMethods.keys(), self.realClass
             raise MockInterfaceError("Calling mock method '%s' that was not found in the original class" % name)
 
         func = self.realClassMethods[name]
@@ -205,7 +204,11 @@ class Mock(object):
         @param calls: A sequence of (name, args, kwargs) tuples.
         """
         for i, call in enumerate(calls):
-            name, args, kwds = call
+            name = call[0]
+            try: args = call[1]
+            except IndexError: args = ()
+            try: kwds = call[2]
+            except IndexError: kwds = {}
             try: self.mockCheckCall(tester, i, name, *args, **kwds)
             except IndexError:
                 tester.fail("No more than %d calls were made (expected %d)" %
@@ -245,10 +248,12 @@ class MockCall:
         self.kwparams = kwparams
 
     def checkArgs(self, tester, *args, **kwargs):
-        tester.assertEqual(args, self.params, "Arguments (%r) differ from \
-those expected (%r)" % (args, self.params))
+        args = tuple(args)
+        assert isinstance(self.params, tuple), "%r" % (self.params,)
+        tester.assertEqual(args, self.params, "Arguments %r differ from \
+those expected: %r" % (self.params, args))
         tester.assertEqual(kwargs, self.kwparams, "Keyword arguments (%r) \
-differ from those expected (%r)" % (kwargs, self.kwparams))
+differ from those expected (%r)" % (self.kwparams, kwargs))
 
     def getParam(self, n ):
         if isinstance(n, int):
