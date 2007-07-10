@@ -190,12 +190,22 @@ class Mock(object):
         return self.mockCalledMethods.get(methodName, [])
     getNamedCalls = mockGetNamedCalls  # deprecated - kept for backward compatibility
 
-    def mockCheckCall(self, index, name, *args, **kwargs):
+    def mockCheckCall(self, tester, index, name, *args, **kwargs):
         '''test that the index-th call had the specified name and parameters'''
         call = self.mockAllCalledMethods[index]
-        assert name == call.getName(), "%r != %r" % (name, call.getName())
-        call.checkArgs(*args, **kwargs)
-
+        tester.assertEqual(name, call.getName())
+        call.checkArgs(tester, *args, **kwargs)
+        
+    def mockCheckCalls(self, tester, calls):
+        """ Test that a specified sequence of calls were made.
+        @param tester: The test case.
+        @param calls: A sequence of (name, args, kwargs) tuples.
+        """
+        print "Juhu!"
+        for i, call in enumerate(calls):
+            print "Checking that call to %s happened at %d" % (call[0], i)
+            self.mockCheckCall(tester, i, call[0], *call[1], **call[2])
+        
 
 def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
     """
@@ -229,11 +239,13 @@ class MockCall:
         self.params = params
         self.kwparams = kwparams
 
-    def checkArgs(self, *args, **kwargs):
-        assert args == self.params, "%r != %r" % (args, self.params)
-        assert kwargs == self.kwparams, "%r != %r" % (kwargs, self.kwparams)
+    def checkArgs(self, tester, *args, **kwargs):
+        tester.assertEqual(args, self.params, "Arguments (%r) differ from \
+those expected (%r)" % (args, self.params))
+        tester.assertEqual(kwargs, self.kwparams, "Keyword arguments (%r) \
+differ from those expected (%r)" % (kwargs, self.kwparams))
 
-    def getParam( self, n ):
+    def getParam(self, n ):
         if isinstance(n, int):
             return self.params[n]
         elif isinstance(n, str):
