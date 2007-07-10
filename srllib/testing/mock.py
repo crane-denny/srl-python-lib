@@ -191,7 +191,10 @@ class Mock(object):
     getNamedCalls = mockGetNamedCalls  # deprecated - kept for backward compatibility
 
     def mockCheckCall(self, tester, index, name, *args, **kwargs):
-        '''test that the index-th call had the specified name and parameters'''
+        """ Test that the index-th call had the specified name and
+        parameters.
+        @raise IndexError: No call with this index.
+        """
         call = self.mockAllCalledMethods[index]
         tester.assertEqual(name, call.getName())
         call.checkArgs(tester, *args, **kwargs)
@@ -201,10 +204,13 @@ class Mock(object):
         @param tester: The test case.
         @param calls: A sequence of (name, args, kwargs) tuples.
         """
-        print "Juhu!"
         for i, call in enumerate(calls):
             print "Checking that call to %s happened at %d" % (call[0], i)
-            self.mockCheckCall(tester, i, call[0], *call[1], **call[2])
+            name, args, kwds = call
+            try: self.mockCheckCall(tester, i, name, *args, **kwds)
+            except IndexError:
+                tester.fail("No more than %d calls were made (expected %d)" %
+                        (i, len(calls)))
         
 
 def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
