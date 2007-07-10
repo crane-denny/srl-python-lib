@@ -141,7 +141,8 @@ class ThreadedProcessMonitorTest(TestCase):
         callable).
         """
         procmon = _process.ThreadedProcessMonitor()
-        cwd = self._get_tempdir()
+        # Use realpath in case we get a path with symlink(s)
+        cwd = os.path.realpath(self._get_tempdir())
         procmon.monitor_command(["python", "-c", "import os; print os.getcwd()"],
                                 cwd=cwd)
         prcs = procmon.process
