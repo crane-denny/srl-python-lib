@@ -205,7 +205,6 @@ class Mock(object):
         @param calls: A sequence of (name, args, kwargs) tuples.
         """
         for i, call in enumerate(calls):
-            print "Checking that call to %s happened at %d" % (call[0], i)
             name, args, kwds = call
             try: self.mockCheckCall(tester, i, name, *args, **kwds)
             except IndexError:
