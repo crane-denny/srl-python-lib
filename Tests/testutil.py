@@ -189,8 +189,18 @@ class FileSystemTest(TestCase):
         # Set executable so the directory can be traversed
         mode = stat.S_IREAD | stat.S_IEXEC
         util.chmod(dpath, mode, True)
-        self.assertEqual(util.get_file_permissions(dpath), mode)
+        if util.get_os_name() == util.Os_Windows:
+            # Some permissions can't be turned off on Windows ..
+            dirmode = mode | (stat.S_IROTH | stat.S_IXOTH | stat.S_IRGRP | stat.S_IXGRP)
+            fmode = stat.S_IREAD | stat.S_IROTH | stat.S_IRGRP
+        else:
+            dirmode = fmode = mode
+        self.assertEqual(util.get_file_permissions(dpath), dirmode)
         for e in os.listdir(dpath):
+            if os.path.isfile(os.path.join(dpath, e)):
+                mode = fmode
+            else:
+                mode = dirmode
             self.assertEqual(util.get_file_permissions(os.path.join(dpath, e)),
                     mode)
 
