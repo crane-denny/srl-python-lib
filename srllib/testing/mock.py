@@ -71,7 +71,7 @@ class Mock(object):
     instances = {}
     _RealClass = None
 
-    def __init__(self, returnValues={}, properties={}, realClass=None, name=None):
+    def __init__(self, returnValues=None, properties=None, realClass=None, name=None):
         """
         The Mock class constructor takes a dictionary of method names and
         the values they return.  Methods that are not in the returnValues
@@ -84,6 +84,11 @@ class Mock(object):
         Both of these help to prevent the Mock class getting out of sync
         with the class it is Mocking.
         """
+        if returnValues is None:
+            returnValues = {}
+        if properties is None:
+            properties = {}
+        
         self.mockCalledMethods = {}
         self.mockAllCalledMethods = []
         self.mockReturnValues = returnValues
@@ -99,7 +104,8 @@ class Mock(object):
             self.realClassMethods = dict(inspect.getmembers(realClass, inspect.isroutine))
             for retMethod in self.mockReturnValues.keys():
                 if not self.realClassMethods.has_key(retMethod):
-                    raise MockInterfaceError("Return value supplied for method '%s' that was not in the original class" % retMethod)
+                    raise MockInterfaceError("Return value supplied for method \
+'%s' that was not in the original class (%s)" % (retMethod, realClass.__name__))
             for prop in properties:
                 if not hasattr(realClass, prop) or not isinstance(getattr(realClass, prop), property):
                     raise MockInterfaceError("'%s' is not a property of '%s'" % (prop, realClass))
@@ -144,7 +150,7 @@ class Mock(object):
         raise a MockInterfaceError.
         Based on the Python 2.3.3 Reference Manual section 5.3.4: Calls.
         """
-        if self.realClassMethods == None:
+        if self.realClassMethods is None:
             return
         if not self.realClassMethods.has_key(name):
             raise MockInterfaceError("Calling mock method '%s' that was not found in the original class" % name)
