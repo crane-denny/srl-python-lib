@@ -12,5 +12,5 @@ for a in sys.argv[1:]:
         pkgs.append(a)
 pkgs = pkgs or ["srllib"]
 
-sys.argv = [sys.argv[0], "--html", "--exclude=.*test.*", "-o", "Docs/Epydoc"] + args + pkgs
+sys.argv = [sys.argv[0], "--html", "-o", "Docs/Epydoc"] + args + pkgs
 epydoc.cli.cli()
