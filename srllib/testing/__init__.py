@@ -374,7 +374,7 @@ def _error(msg):
     sys.exit(1)
 
 def run_tests(package_name, gui=False, ignore=[]):
-    """ Use L{nose} for discovering/running tests.
+    """ Use C{nose} for discovering/running tests.
 
     After finishing, sys.exit is called with the success status.
     @param package_name: Name of package that is tested. Used for analyzing coverage by tests.
