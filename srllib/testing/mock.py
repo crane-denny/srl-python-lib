@@ -1,6 +1,8 @@
 #
 # (c) Dave Kirby 2001 - 2005
 #     mock@thedeveloperscoach.com
+# (c) Arve Knudsen 2007
+#     arve.knudsen@gmail.com
 #
 # Original call interceptor and call assertion code by Phil Dawes (pdawes@users.sourceforge.net)
 # Call interceptor code enhanced by Bruce Cropley (cropleyb@yahoo.com.au)
@@ -10,7 +12,7 @@
 # it yourself.
 # 
 # 
-#     Copyright (c) 2005, Dave Kirby
+#     Copyright (c) 2005, Dave Kirby, 2007, Arve Knudsen
 # 
 #     All rights reserved.
 # 
@@ -42,8 +44,9 @@
 #         mock@thedeveloperscoach.com
 
 
-"""
-Mock object library for Python. Mock objects can be used when unit testing
+""" Mock object library for Python.
+
+Mock objects can be used when unit testing
 to remove a dependency on another production class. They are typically used
 when the dependency would either pull in lots of other classes, or
 significantly slow down the execution of the test.
@@ -51,7 +54,7 @@ They are also used to create exceptional conditions that cannot otherwise
 be easily triggered in the class under test.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Added in Python 2.1
 import inspect
@@ -71,7 +74,8 @@ class Mock(object):
     instances = {}
     _RealClass = None
 
-    def __init__(self, returnValues=None, properties=None, realClass=None, name=None):
+    def __init__(self, returnValues=None, properties=None, realClass=None,
+            name=None):
         """
         The Mock class constructor takes a dictionary of method names and
         the values they return.  Methods that are not in the returnValues
@@ -185,7 +189,6 @@ class Mock(object):
         representing all the methods in the order they were called.
         """
         return self.mockAllCalledMethods
-    getAllCalls = mockGetAllCalls  # deprecated - kept for backward compatibility
 
     def mockGetNamedCalls(self, methodName):
         """
@@ -193,7 +196,6 @@ class Mock(object):
         representing all the calls to the named method in the order they were called.
         """
         return self.mockCalledMethods.get(methodName, [])
-    getNamedCalls = mockGetNamedCalls  # deprecated - kept for backward compatibility
 
     def mockCheckCall(self, tester, index, name, *args, **kwargs):
         """ Test that the index-th call had the specified name and
