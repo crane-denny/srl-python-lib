@@ -65,7 +65,8 @@ class MockInterfaceError(Exception):
 
 class Mock(object):
     """
-    The Mock class emulates any other class for testing purposes.
+    The Mock class simulates any other class for testing purposes.
+    
     All method calls are stored for later examination.
     @cvar mockInstances: Dictionary of all mock instances, indexed on class to
     discern different mock subclasses.
@@ -218,24 +219,29 @@ be to %s, but it was to %s instead" % (index, name, call.name,))
         @param tester: The test case.
         @param calls: A sequence of (name, args, kwargs) tuples.
         """
+        numCalls, numExpected = len(self.mockAllCalledMethods), len(calls)
+        if numCalls != numExpected:
+            if numCalls < numExpected:
+                tester.fail("No more than %d calls were made (expected %d)" %
+                        (numCalls, numExpected))
+            else:
+                tester.fail("%d calls were made, expected %d" %
+                        (numCalls, numExpected))
+                
         for i, call in enumerate(calls):
             name = call[0]
             try: args = call[1]
             except IndexError: args = ()
             try: kwds = call[2]
             except IndexError: kwds = {}
-            try: self.mockCheckCall(tester, i, name, *args, **kwds)
-            except IndexError:
-                tester.fail("No more than %d calls were made (expected %d)" %
-                        (i, len(calls)))
+            self.mockCheckCall(tester, i, name, *args, **kwds)
                 
     def mockCheckNamedCall(self, tester, methodName, index, *args, **kwargs):
         """ Test that the index-th call to a certain method had the specified
         parameters.
         @raise IndexError: No call with this index.
         """
-        print "Looking up", index
-        print "The calls", self.mockCalledMethods.get(methodName, [])
+        self.mockCalledMethods.get(methodName, [])
         call = self.mockCalledMethods.get(methodName, [])[index]
         call.checkArgs(tester, *args, **kwargs)
                 
@@ -246,17 +252,22 @@ be to %s, but it was to %s instead" % (index, name, call.name,))
         @param methodName: The method's name.
         @param calls: A sequence of (args, kwargs) tuples.
         """
-        print "Were called:", self.mockCalledMethods.get(methodName, methodName)
+        numCalls, numExpected = len(self.mockCalledMethods.get(methodName,
+                [])), len(calls)
+        if numCalls != numExpected:
+            if numCalls < numExpected:
+                tester.fail("No more than %d calls were made (expected %d)" %
+                        (numCalls, numExpected))
+            else:
+                tester.fail("%d calls were made, expected %d" %
+                        (numCalls, numExpected))
+        
         for i, call in enumerate(calls):
             try: args = call[0]
             except IndexError: args = ()
             try: kwds = call[1]
             except IndexError: kwds = {}
-            try: self.mockCheckNamedCall(tester, methodName, i, *args, **kwds)
-            except IndexError:
-                print "Buu"
-                tester.fail("No more than %d calls were made (expected %d)" %
-                        (i, len(calls)))
+            self.mockCheckNamedCall(tester, methodName, i, *args, **kwds)
         
 
 def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
