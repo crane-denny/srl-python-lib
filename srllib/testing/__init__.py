@@ -44,8 +44,8 @@ class TestCase(unittest.TestCase):
         # Reset Mock register
         mock.Mock.mockInstances.clear()
 
-    def assertNot(self, val):
-        self.assert_(not val)
+    def assertNot(self, val, msg=None):
+        self.assert_(not val, msg=msg)
         
     def assertStrEqual(self, lhs, rhs, msg=None):
         self.assertEqual(str(lhs), str(rhs), msg)
