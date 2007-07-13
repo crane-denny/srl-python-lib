@@ -65,28 +65,29 @@ class MockInterfaceError(Exception):
 
 class Mock(object):
     """
-    The Mock class emulates any other class for testing purposes.
+    The Mock class simulates any other class for testing purposes.
+    
     All method calls are stored for later examination.
-    @cvar instances: Dictionary of all mock instances, indexed on class to discern different mock
-    subclasses.
-    @cvar _RealClass: For subclasses, indicate the class that is being mocked.
+    @cvar mockInstances: Dictionary of all mock instances, indexed on class to
+    discern different mock subclasses.
+    @cvar _MockRealClass: For subclasses, indicate the class that is being mocked.
     """
-    instances = {}
-    _RealClass = None
+    mockInstances = {}
+    _MockRealClass = None
 
     def __init__(self, returnValues=None, properties=None, realClass=None,
             name=None):
-        """
-        The Mock class constructor takes a dictionary of method names and
-        the values they return.  Methods that are not in the returnValues
-        dictionary will return None.
-        You may also supply a class whose interface is being mocked.
-        All calls will be checked to see if they appear in the original
-        interface. Any calls to methods not appearing in the real class
-        will raise a MockInterfaceError.  Any calls that would fail due to
-        non-matching parameter lists will also raise a MockInterfaceError.
-        Both of these help to prevent the Mock class getting out of sync
-        with the class it is Mocking.
+        """ The Mock class constructor takes a dictionary of method names and
+        the values they return.
+        
+        Methods that are not in the returnValues dictionary will return None.
+        You may also supply a class whose interface is being mocked.  All calls
+        will be checked to see if they appear in the original interface. Any
+        calls to methods not appearing in the real class will raise a
+        MockInterfaceError.  Any calls that would fail due to non-matching
+        parameter lists will also raise a MockInterfaceError.  Both of these
+        help to prevent the Mock class getting out of sync with the class it is
+        Mocking.
         """
         if returnValues is None:
             returnValues = {}
@@ -97,17 +98,17 @@ class Mock(object):
         self.mockAllCalledMethods = []
         self.mockReturnValues = returnValues
         self.mockExpectations = {}
-        self.realClassMethods = None
+        self.__realClassMethods = self.__realClassProperties = {}
         self.__name = name
         if realClass is None:
-            realClass = self._RealClass
+            realClass = self._MockRealClass
+        self.__realClass = realClass
         if realClass is not None:
             assert inspect.isclass(realClass)
             assert not issubclass(realClass, (MockCallable, Mock)), realClass
-            self.realClass = realClass
-            self.realClassMethods = dict(inspect.getmembers(realClass, inspect.isroutine))
+            self.__realClassMethods = dict(inspect.getmembers(realClass, inspect.isroutine))
             for retMethod in self.mockReturnValues.keys():
-                if not self.realClassMethods.has_key(retMethod):
+                if not self.__realClassMethods.has_key(retMethod):
                     raise MockInterfaceError("Return value supplied for method \
 '%s' that was not in the original class (%s)" % (retMethod, realClass.__name__))
             for prop in properties:
@@ -118,9 +119,9 @@ class Mock(object):
 
         # Record this instance among all mock instances
         tp = type(self)
-        if not tp in Mock.instances:
-            Mock.instances[tp] = []
-        Mock.instances[tp].append(self)
+        if not tp in Mock.mockInstances:
+            Mock.mockInstances[tp] = []
+        Mock.mockInstances[tp].append(self)
 
     def __str__(self):
         if self.__name is not None:
@@ -137,9 +138,15 @@ class Mock(object):
                 self.__dict__[name] = MockCallable(name, self, handcrafted=True)
  
     def __getattr__(self, name):
-        try: return self.__realClassProperties[name]
-        except: pass
+        props = self.__dict__["_Mock__realClassProperties"]
+        try: return props[name]
+        except KeyError: pass
         return MockCallable(name, self)
+    
+    def mockClearCalls(self):
+        """ Clear all calls registered so far. """
+        self.mockAllCalledMethods = []
+        self.mockCalledMethods.clear()
     
     def mockAddReturnValues(self, **methodReturnValues ):
         self.mockReturnValues.update(methodReturnValues)
@@ -154,12 +161,12 @@ class Mock(object):
         raise a MockInterfaceError.
         Based on the Python 2.3.3 Reference Manual section 5.3.4: Calls.
         """
-        if self.realClassMethods is None:
+        if self.__realClassMethods is None:
             return
-        if not self.realClassMethods.has_key(name):
+        if not self.__realClassMethods.has_key(name):
             raise MockInterfaceError("Calling mock method '%s' that was not found in the original class" % name)
 
-        func = self.realClassMethods[name]
+        func = self.__realClassMethods[name]
         try:
             args, varargs, varkw, defaults = inspect.getargspec(func)
         except TypeError:
@@ -203,7 +210,8 @@ class Mock(object):
         @raise IndexError: No call with this index.
         """
         call = self.mockAllCalledMethods[index]
-        tester.assertEqual(name, call.getName())
+        tester.assertEqual(name, call.name, "Expected call number %d to \
+be to %s, but it was to %s instead" % (index, name, call.name,))
         call.checkArgs(tester, *args, **kwargs)
         
     def mockCheckCalls(self, tester, calls):
@@ -211,16 +219,55 @@ class Mock(object):
         @param tester: The test case.
         @param calls: A sequence of (name, args, kwargs) tuples.
         """
+        numCalls, numExpected = len(self.mockAllCalledMethods), len(calls)
+        if numCalls != numExpected:
+            if numCalls < numExpected:
+                tester.fail("No more than %d calls were made (expected %d)" %
+                        (numCalls, numExpected))
+            else:
+                tester.fail("%d calls were made, expected %d" %
+                        (numCalls, numExpected))
+                
         for i, call in enumerate(calls):
             name = call[0]
             try: args = call[1]
             except IndexError: args = ()
             try: kwds = call[2]
             except IndexError: kwds = {}
-            try: self.mockCheckCall(tester, i, name, *args, **kwds)
-            except IndexError:
+            self.mockCheckCall(tester, i, name, *args, **kwds)
+                
+    def mockCheckNamedCall(self, tester, methodName, index, *args, **kwargs):
+        """ Test that the index-th call to a certain method had the specified
+        parameters.
+        @raise IndexError: No call with this index.
+        """
+        self.mockCalledMethods.get(methodName, [])
+        call = self.mockCalledMethods.get(methodName, [])[index]
+        call.checkArgs(tester, *args, **kwargs)
+                
+    def mockCheckNamedCalls(self, tester, methodName, calls):
+        """ Test that a specified sequence of calls to a certain method were
+        made
+        @param tester: The test case.
+        @param methodName: The method's name.
+        @param calls: A sequence of (args, kwargs) tuples.
+        """
+        numCalls, numExpected = len(self.mockCalledMethods.get(methodName,
+                [])), len(calls)
+        if numCalls != numExpected:
+            if numCalls < numExpected:
                 tester.fail("No more than %d calls were made (expected %d)" %
-                        (i, len(calls)))
+                        (numCalls, numExpected))
+            else:
+                tester.fail("%d calls were made, expected %d" %
+                        (numCalls, numExpected))
+        
+        for i, call in enumerate(calls):
+            try: args = call[0]
+            except IndexError: args = ()
+            try: kwds = call[1]
+            except IndexError: kwds = {}
+            self.mockCheckNamedCall(tester, methodName, i, *args, **kwds)
         
 
 def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
@@ -245,49 +292,52 @@ def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
     return len(posSeen)
 
 class MockCall:
-    """
-    MockCall records the name and parameters of a call to an instance
-    of a Mock class. Instances of MockCall are created by the Mock class,
+    """ MockCall records the name and parameters of a call to an instance
+    of a Mock class.
+    
+    Instances of MockCall are created by the Mock class,
     but can be inspected later as part of the test.
+    @ivar name: Name of callable.
+    @ivar args: Arguments to callable.
+    @ivar kwargs: Keyword arguments to callable.
     """
-    def __init__(self, name, params, kwparams ):
+    def __init__(self, name, args, kwargs):
         self.name = name
-        self.params = params
-        self.kwparams = kwparams
+        self.args = args
+        self.kwargs = kwargs
 
     def checkArgs(self, tester, *args, **kwargs):
         args = tuple(args)
-        assert isinstance(self.params, tuple), "%r" % (self.params,)
-        tester.assertEqual(args, self.params, "Arguments %r differ from \
-those expected: %r" % (self.params, args))
-        tester.assertEqual(kwargs, self.kwparams, "Keyword arguments (%r) \
-differ from those expected (%r)" % (self.kwparams, kwargs))
+        assert isinstance(self.args, tuple), "%r" % (self.args,)
+        tester.assertEqual(args, self.args, "Arguments %r differ from \
+those expected: %r" % (self.args, args))
+        tester.assertEqual(kwargs, self.kwargs, "Keyword arguments (%r) \
+differ from those expected (%r)" % (self.kwargs, kwargs))
 
-    def getParam(self, n ):
+    def getParam(self, n):
         if isinstance(n, int):
-            return self.params[n]
+            return self.args[n]
         elif isinstance(n, str):
-            return self.kwparams[n]
+            return self.kwargs[n]
         else:
             raise IndexError, 'illegal index type for getParam'
 
-    def getNumParams(self):
-        return len(self.params)
+    @property
+    def numArgs(self):
+        return len(self.args)
 
-    def getNumKwParams(self):
-        return len(self.kwparams)
-
-    def getName(self):
-        return self.name
+    @property
+    def numKwargs(self):
+        return len(self.kwargs)
     
     #pretty-print the method call
     def __str__(self):
         s = self.name + "("
         sep = ''
-        for p in self.params:
+        for p in self.args:
             s = s + sep + repr(p)
             sep = ', '
-        items = self.kwparams.items()
+        items = self.kwargs.items()
         items.sort()
         for k,v in items:
             s = s + sep + k + '=' + repr(v)
@@ -298,12 +348,18 @@ differ from those expected (%r)" % (self.kwparams, kwargs))
         return self.__str__()
 
 class MockCallable:
-    """
-    Intercepts the call and records it, then delegates to either the mock's
-    dictionary of mock return values that was passed in to the constructor,
-    or a handcrafted method of a Mock subclass.
+    """ Intercept/record a call.
+    
+    The call is delegated to either the mock's dictionary of mock return
+    values that was passed in to the constructor, or a handcrafted method
+    of a Mock subclass.
     """
     def __init__(self, name, mock, handcrafted=False):
+        """
+        @param name: Name of callable.
+        @param mock: Parent mock.
+        @param handcrafted: ?
+        """
         self.name = name
         self.mock = mock
         self.handcrafted = handcrafted
@@ -381,7 +437,7 @@ def expectParams(*params, **keywords):
     '''check that the callObj is called with specified params and keywords
     '''
     def fn(mockObj, callObj, idx):
-        return callObj.params == params and callObj.kwparams == keywords
+        return callObj.args == params and callObj.kwargs == keywords
     return fn
 
 
@@ -389,7 +445,7 @@ def expectAfter(*methods):
     '''check that the function is only called after all the functions in 'methods'
     '''
     def fn(mockObj, callObj, idx):
-        calledMethods = [method.getName() for method in mockObj.mockGetAllCalls()]
+        calledMethods = [method.name for method in mockObj.mockGetAllCalls()]
         #skip last entry, since that is the current call
         calledMethods = calledMethods[:-1]
         for method in methods:  

@@ -22,7 +22,7 @@ class _Singleton(Mock):
 from PyQt4.QtGui import QMessageBox, QFileDialog
 
 class MockQMessageBox(Mock):
-    _RealClass = QMessageBox
+    _MockRealClass = QMessageBox
 
 class MockQFileDialog(Mock):
-    _RealClass = QFileDialog
+    _MockRealClass = QFileDialog

@@ -42,10 +42,10 @@ class TestCase(unittest.TestCase):
             srllib.util.remove_dir(dtemp, True, True)
 
         # Reset Mock register
-        mock.Mock.instances.clear()
+        mock.Mock.mockInstances.clear()
 
-    def assertNot(self, val):
-        self.assert_(not val)
+    def assertNot(self, val, msg=None):
+        self.assert_(not val, msg=msg)
         
     def assertStrEqual(self, lhs, rhs, msg=None):
         self.assertEqual(str(lhs), str(rhs), msg)
@@ -153,20 +153,29 @@ class TestCase(unittest.TestCase):
     def _exception_handler(self, exception):
         raise exception
 
-    def _get_datapath(self, relPath):
-        return os.path.join("Data", relPath)
+    def _get_datapath(self, relpath, abs=False):
+        """ For subclasses: Get path to file in "Data" directory.
+        @param abs: Return absolute path?
+        """
+        dpath = os.path.join("Data", relpath)
+        if abs:
+            dpath = os.path.abspath(dpath)
+        return dpath
 
     def _get_bindatapath(self, relPath):
         if relPath.count(os.path.sep) > 1:
             parDir, remaining = relPath.split(os.path.sep, 1)
         else:
             parDir, remaining = relPath, ""
-        if Os in Windows:
+        os_name = srllib.util.get_os_name()
+        if os_name == srllib.util.Os_Windows:
             parDir += "-win"
-        elif Os in Linux:
+        elif os_name == srllib.util.Os_Linux:
             parDir += "-linux"
+        '''
         elif Os in Darwin:
             parDir += "-osx"
+        '''
         ret = os.path.join("Data", parDir, remaining)
         return ret
 
