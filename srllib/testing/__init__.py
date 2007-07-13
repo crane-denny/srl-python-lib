@@ -42,7 +42,7 @@ class TestCase(unittest.TestCase):
             srllib.util.remove_dir(dtemp, True, True)
 
         # Reset Mock register
-        mock.Mock.instances.clear()
+        mock.Mock.mockInstances.clear()
 
     def assertNot(self, val):
         self.assert_(not val)
