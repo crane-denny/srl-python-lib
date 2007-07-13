@@ -1,0 +1,11 @@
+.*\.py[co]
+Docs/Epydoc
+.+.sw.
+build
+MANIFEST
+dist
+.+\.egg.*
+setup.cfg
+\..*project
+\.settings
+\.coverage
