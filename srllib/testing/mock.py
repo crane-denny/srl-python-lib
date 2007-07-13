@@ -67,11 +67,11 @@ class Mock(object):
     """
     The Mock class emulates any other class for testing purposes.
     All method calls are stored for later examination.
-    @cvar _instances: Dictionary of all mock instances, indexed on class to
+    @cvar mockInstances: Dictionary of all mock instances, indexed on class to
     discern different mock subclasses.
     @cvar _MockRealClass: For subclasses, indicate the class that is being mocked.
     """
-    _instances = {}
+    mockInstances = {}
     _MockRealClass = None
 
     def __init__(self, returnValues=None, properties=None, realClass=None,
@@ -118,9 +118,9 @@ class Mock(object):
 
         # Record this instance among all mock instances
         tp = type(self)
-        if not tp in Mock._instances:
-            Mock._instances[tp] = []
-        Mock._instances[tp].append(self)
+        if not tp in Mock.mockInstances:
+            Mock.mockInstances[tp] = []
+        Mock.mockInstances[tp].append(self)
 
     def __str__(self):
         if self.__name is not None:
