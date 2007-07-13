@@ -348,12 +348,18 @@ differ from those expected (%r)" % (self.kwargs, kwargs))
         return self.__str__()
 
 class MockCallable:
-    """
-    Intercepts the call and records it, then delegates to either the mock's
-    dictionary of mock return values that was passed in to the constructor,
-    or a handcrafted method of a Mock subclass.
+    """ Intercept/record a call.
+    
+    The call is delegated to either the mock's dictionary of mock return
+    values that was passed in to the constructor, or a handcrafted method
+    of a Mock subclass.
     """
     def __init__(self, name, mock, handcrafted=False):
+        """
+        @param name: Name of callable.
+        @param mock: Parent mock.
+        @param handcrafted: ?
+        """
         self.name = name
         self.mock = mock
         self.handcrafted = handcrafted
