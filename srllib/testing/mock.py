@@ -164,7 +164,8 @@ class Mock(object):
         if self.__realClassMethods is None:
             return
         if not self.__realClassMethods.has_key(name):
-            raise MockInterfaceError("Calling mock method '%s' that was not found in the original class" % name)
+            raise MockInterfaceError("Calling mock method '%s' that was not \
+found in the original class (%s)" % (name, self.__realClass.__name__))
 
         func = self.__realClassMethods[name]
         try:
