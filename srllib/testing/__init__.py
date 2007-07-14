@@ -255,8 +255,10 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[]):
                         mismatched = True
                         shutil.copytree(dir0, "/tmp/mismatch")
                     elif not shallow:
-                        chksum0, chksum1 = getChecksum(path0), getChecksum(path1)
-                        mismatched = getChecksum(path0) != getChecksum(path1)
+                        chksum0, chksum1 = (srllib.util.get_checksum(path0),
+                                srllib.util.get_checksum(path1))
+                        mismatched = srllib.util.get_checksum(path0) != \
+                                srllib.util.get_checksum(path1)
                         if mismatched:
                             sys.stderr.write("%s mismatched against %s because %s != %s\n" % (path0, path1, chksum0, chksum1))
                 else:
@@ -290,6 +292,7 @@ def _get_tests(specified):
         tests.append(t)
     return tests
 
+'''
 def _analyzePkg(pkg, rslts, ignore):
     """ Find all sub-modules of a package and analyze them. """
     import imp
@@ -377,6 +380,7 @@ def _analyzeCoverage(package_name, tests, infer, ignore):
         totalStatements += len(statements)
         totalNe += len(notExecuted)
     print "Total coverage: %f" % (1.0 - totalNe / float(totalStatements),)
+'''
 
 def _error(msg):
     sys.stderr.write("%s\n" % msg)
