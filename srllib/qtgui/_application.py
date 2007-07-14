@@ -1,13 +1,14 @@
 """ Functionality on top of QApplication.
 """
-import sys, traceback, signal, Queue
+import sys, traceback, Queue
 from PyQt4.QtGui import *
-from PyQt4.QtCore import QEvent, QTimer, QObject, SIGNAL
 
+import srllib.threading
 from srllib.signal import Signal
 from _common import *
+from srllib.qtgui import _signal
 
-__all__ = ["Application"]
+__all__ = ["Application", "get_app"]
 
 class _AsyncEvent(QEvent):
     EventType = QEvent.User
@@ -15,8 +16,7 @@ class _AsyncEvent(QEvent):
     def __init__(self, func, obj, args, kwds):
         QEvent.__init__(self, self.__class__.EventType)
         self.func, self.obj, self.args, self.kwds = func, obj, args, kwds
-        import threading
-        self.dispatch_event = threading.Event()
+        self.dispatch_event = srllib.threading.Event()
 
 class Application(QApplication):
     """ Specialize QApplication to trap Python exceptions, inform the user and quit.
@@ -27,15 +27,20 @@ class Application(QApplication):
     sig_quitting = srllib.signal.Signal()
     the_app = None
 
-    def __init__(self, argv=sys.argv, catchExceptions=True):
-        import PyQt4.QtGui
+    def __init__(self, argv=sys.argv, catch_exceptions=True):
+        """
+        @param catch_exceptions: Handle uncaught exceptions.
+        """
         QApplication.__init__(self, argv)
 
         self.sig_exception = Signal()
 
         self.__once, self.__hasQuit, self.__call_queue = True, False, []
-        if catchExceptions:
+        if catch_exceptions:
             sys.excepthook = self.__exchook
+            srllib.threading.register_exceptionhandler(self.__thrdexc_hook)
+        
+        import PyQt4.QtGui
         PyQt4.QtGui.qApp = self
         Application.the_app = self
 
@@ -109,26 +114,30 @@ class Application(QApplication):
             i -= 1
         for mthd, args, kwds, optimize in to_dispatch:
             mthd(*args, **kwds)
+            
+    @_signal.deferred_slot
+    def __thrdexc_hook(self, exc):
+        self.__exchook(exc.exc_type, exc.exc_value, exc.exc_traceback,
+                in_thread=exc.name)
 
-    def __exchook(self, exc, value, tb):
+    def __exchook(self, exc, value, tb, in_thread=None):
         if self.__once:
             self.__once = False
 
             self.sig_exception(exc, value, tb)
 
             self.__timer.stop()
-            import srllib.threading
             thrdSpecific = ""
-            if exc is srllib.threading.ThreadError:
-                thrdSpecific = " in thread %s" % (value.thread,)
-                exc, value, tb = value.excType, value.exc, value.tb
+            if in_thread:
+                thrdSpecific = " in thread %s" % (in_thread,) 
                 
             msg = ' '.join(traceback.format_exception(exc, value, tb))
 
             message_critical("Fatal Error", "An unexpected exception was encountered%s, \
 the application will have to be shut down." % (thrdSpecific,), detailedText=msg, informativeText=\
 "The detailed text provides full technical information of how the error happened, so \
-developers may resolve the problem. This information should also be visible in the application log.")
+developers may resolve the problem. This information should also be visible in the \
+application log.")
 
             if not self.__hasQuit:
                 self.quit()
@@ -141,4 +150,3 @@ developers may resolve the problem. This information should also be visible in t
 def get_app():
     """ Get the current L{Application} instance. """
     return Application.the_app
-

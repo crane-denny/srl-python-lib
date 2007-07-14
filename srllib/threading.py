@@ -9,9 +9,17 @@ from srllib import util
 from srllib.error import *
 
 class ThreadError(SrlError):
+    """ Encapsulation of an exception caught in a thread.
+    @ivar name: Thread name.
+    @ivar exc_type: Exception type.
+    @ivar exc_value: Exception value.
+    @ivar exc_traceback: Exception traceback.
+    """
     def __init__(self, name, exc_info):
         SrlError.__init__(self, "An exception was caught in thread '%s':\n%s" %
-                          (name, " ".join(traceback.format_exception(*exc_info))))
+                (name, " ".join(traceback.format_exception(*exc_info))))
+        self.name = name
+        self.exc_type, self.exc_value, self.exc_traceback = exc_info
 
 class Cancellation(Exception):
     pass
