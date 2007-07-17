@@ -161,7 +161,7 @@ class Mock(object):
         raise a MockInterfaceError.
         Based on the Python 2.3.3 Reference Manual section 5.3.4: Calls.
         """
-        if self.__realClassMethods is None:
+        if self.__realClass is None:
             return
         if not self.__realClassMethods.has_key(name):
             raise MockInterfaceError("Calling mock method '%s' that was not \
