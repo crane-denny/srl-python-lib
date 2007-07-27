@@ -53,7 +53,6 @@ significantly slow down the execution of the test.
 They are also used to create exceptional conditions that cannot otherwise
 be easily triggered in the class under test.
 """
-
 __version__ = "0.2.0"
 
 # Added in Python 2.1
@@ -152,7 +151,9 @@ class Mock(object):
         self.mockReturnValues.update(methodReturnValues)
         
     def mockSetExpectation(self, name, testFn, after=0, until=0):
-        self.mockExpectations.setdefault(name, []).append((testFn,after,until))
+        """ Set an expectation for a method call. """
+        self.mockExpectations.setdefault(name, []).append((testFn, after,
+                until))
 
     def _checkInterfaceCall(self, name, callParams, callKwParams):
         """
