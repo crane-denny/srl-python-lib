@@ -99,6 +99,7 @@ class Mock(object):
         self.mockExpectations = {}
         self.__realClassMethods = self.__realClassProperties = {}
         self.__name = name
+        self.__methods = {}    # Cache mocked methods
         if realClass is None:
             realClass = self._MockRealClass
         self.__realClass = realClass
@@ -140,7 +141,10 @@ class Mock(object):
         props = self.__dict__["_Mock__realClassProperties"]
         try: return props[name]
         except KeyError: pass
-        return MockCallable(name, self)
+        if name.startswith("mock"):
+            # Don't mock mock methods!
+            raise AttributeError(name)
+        return self.__methods.setdefault(name, MockCallable(name, self))
     
     def mockClearCalls(self):
         """ Clear all calls registered so far. """
@@ -249,7 +253,7 @@ be to %s, but it was to %s instead" % (index, name, call.name,))
                 
     def mockCheckNamedCalls(self, tester, methodName, calls):
         """ Test that a specified sequence of calls to a certain method were
-        made
+        made.
         @param tester: The test case.
         @param methodName: The method's name.
         @param calls: A sequence of (args, kwargs) tuples.
