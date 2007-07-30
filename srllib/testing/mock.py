@@ -150,6 +150,10 @@ class Mock(object):
         """ Clear all calls registered so far. """
         self.mockAllCalledMethods = []
         self.mockCalledMethods.clear()
+        
+    def mockSetReturnValue(self, name, value):
+        """ Set a return value for a method """
+        self.mockReturnValues[name] = value
     
     def mockAddReturnValues(self, **methodReturnValues ):
         self.mockReturnValues.update(methodReturnValues)
