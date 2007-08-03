@@ -435,7 +435,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
             readSoFar = _copy_file(srcPath, dstPath, callback, allBytes, readSoFar)
 
 def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
-        encoding=None):
+        encoding=None, dir=None):
     """ Create temporary file.
     
     The file is opened in R/W mode.
@@ -444,9 +444,11 @@ def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
     @param close: Close the file after creating it?
     @param content: Optional content to write to file.
     @param encoding: Specify text encoding for file.
-    @return: If C{close} path to created temporary file, else temporary file. """
+    @param dir: Optionally specify directory for the file.
+    @return: If C{close} path to created temporary file, else temporary file.
+    """
     import tempfile
-    (fd, fname) = tempfile.mkstemp(suffix=suffix, prefix=prefix)
+    (fd, fname) = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir)
     # File should not be automatically deleted
     os.close(fd)
     
