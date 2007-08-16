@@ -394,7 +394,7 @@ def run_tests(package_name, gui=False, ignore=[]):
     @param gui: Do the tests involve GUI code?
     @param ignore: Modules to ignore when analyzing coverage.
     """
-    import optparse, nose, nose.core
+    import optparse, nose.core
 
     if gui:
         import gui, srllib.qtgui

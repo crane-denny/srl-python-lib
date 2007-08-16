@@ -76,8 +76,7 @@ class Mock(object):
 
     def __init__(self, returnValues=None, properties=None, realClass=None,
             name=None):
-        """ The Mock class constructor takes a dictionary of method names and
-        the values they return.
+        """ Constructor.
         
         Methods that are not in the returnValues dictionary will return None.
         You may also supply a class whose interface is being mocked.  All calls
@@ -87,6 +86,12 @@ class Mock(object):
         parameter lists will also raise a MockInterfaceError.  Both of these
         help to prevent the Mock class getting out of sync with the class it is
         Mocking.
+        @param returnValues: Define return values for mocked methods.
+        @param properties: Define return values for mocked properties.
+        @param realClass: Specify the mocked class.
+        @param name: Optionally specify mock's name.
+        @raise MockInterfaceError: An inconsistency was detected in the
+        mock's interface.
         """
         if returnValues is None:
             returnValues = {}
@@ -104,20 +109,39 @@ class Mock(object):
             realClass = self._MockRealClass
         self.__realClass = realClass
         if realClass is not None:
+            # Verify interface versus mocked class
             assert inspect.isclass(realClass)
             assert not issubclass(realClass, (MockCallable, Mock)), realClass
             self.__realClassMethods = dict(inspect.getmembers(realClass,
                     inspect.isroutine))
+            
+            # Verify that mocked methods exist in real class
             for retMethod in self.mockReturnValues.keys():
                 if not self.__realClassMethods.has_key(retMethod):
                     raise MockInterfaceError("Return value supplied for method \
 '%s' that was not in the original class (%s)" % (retMethod, realClass.__name__))
-            for prop in properties:
-                if not hasattr(realClass, prop) or not isinstance(getattr(
-                        realClass, prop), property):
+            
+            # Verify that mocked properties exist in real class
+            
+            realprops = self.__realClassProperties = dict(
+                inspect.getmembers(realClass, inspect.isdatadescriptor))
+            for name in properties:
+                if  name not in realprops:
                     raise MockInterfaceError("'%s' is not a property of '%s'" %
-                            (prop, realClass))
+                            (name, realClass))
+                
+            # Now properties
+            mockprops = dict(inspect.getmembers(self.__class__,
+                inspect.isdatadescriptor))
+            for name, prop in mockprops.items():
+                if name.startswith("mock"):
+                    continue
+                if name not in realprops:
+                    raise MockInterfaceError("'%s' is not a property of '%s'" %
+                            (name, realClass))
+            
             self.__realClassProperties = properties
+            
         self.__setupSubclassMethodInterceptors()
 
         # Record this instance among all mock instances
@@ -254,7 +278,7 @@ be to %s, but it was to %s instead" % (index, name, call.name,))
             self.mockCheckNamedCall(tester, methodName, i, *args, **kwds)
      
     def __setupSubclassMethodInterceptors(self):
-        methods = inspect.getmembers(self.__class__,inspect.isroutine)
+        methods = inspect.getmembers(self.__class__, inspect.isroutine)
         baseMethods = dict(inspect.getmembers(Mock, inspect.ismethod))
         for m in methods:
             name = m[0]

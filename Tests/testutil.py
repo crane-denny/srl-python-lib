@@ -2,9 +2,10 @@
 """ Test the util module. """
 import os.path, stat, codecs
 
-from srllib.testing import *
 from srllib import util
 import srllib.error as _srlerror
+
+from _common import *
 
 class FileSystemTest(TestCase):
     """ Test filesystem utility functions. """

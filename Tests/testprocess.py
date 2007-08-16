@@ -1,7 +1,6 @@
 """ Test the signal module. """
 import os.path, time, signal
 
-from srllib.testing import *
 import srllib.process as _process
 from _common import *
 
