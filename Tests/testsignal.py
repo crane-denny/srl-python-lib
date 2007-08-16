@@ -1,6 +1,7 @@
 """ Test the signal module. """
-from srllib.testing import *
 from srllib.signal import *
+
+from _common import *
 
 class _Slot:
     def __call__(self):
