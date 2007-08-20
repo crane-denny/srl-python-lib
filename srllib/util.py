@@ -263,7 +263,7 @@ def _walkdir_handle_err(path):
     raise PermissionsError(path)
 
 @_raise_permissions
-def walkdir(path, errorfunc=None, topdown=True):
+def walkdir(path, errorfunc=None, topdown=True, ignore=None):
     """ Directory tree generator.
     
     This function works in much the same way as os.walk, but expands somewhat
@@ -272,6 +272,7 @@ def walkdir(path, errorfunc=None, topdown=True):
     @param errorfunc: Function to handle error when a directory can't be
     traversed. Return False from this to ignore directory.
     @param topdown: Traverse in topdown fashion?
+    @param ignore: Optionally provide a set of filenames to ignore.
     @raise PermissionsError: Missing permission to traverse directory.
     """
     if errorfunc is None:
@@ -282,9 +283,15 @@ def walkdir(path, errorfunc=None, topdown=True):
         if not errorfunc(path):
             # Ignore directory
             return
+        
+    if ignore is None:
+        ignore = []
     
     dnames, fnames = [], []
     for e in os.listdir(path):
+        if e in ignore:
+            continue
+        
         if os.path.isdir(os.path.join(path, e)):
             dnames.append(e)
         else:

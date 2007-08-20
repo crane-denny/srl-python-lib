@@ -211,6 +211,16 @@ class FileSystemTest(TestCase):
         for dpath, dnames, fnames in util.walkdir(root):
             entered.append(dpath)
         self.assertEqual(entered, [root, os.path.join(root, "testdir")])
+        
+    def test_walkdir_ignore(self):
+        """ Test ignoring files.
+        """
+        root = self.__create_dir()
+        os.mkdir(os.path.join(root, ".svn"))
+        entered = []
+        for dpath, dnames, fnames in util.walkdir(root, ignore=[".svn"]):
+            entered.append(dpath)
+        self.assertEqual(entered, [root, os.path.join(root, "testdir")])
 
     def test_remove_file(self):
         dpath = self._get_tempdir()
