@@ -68,7 +68,8 @@ class GuiTestCase(TestCase):
         self._widget.close()
         for sender, sig, slt in self.__qtConns:
             QObject.disconnect(sender, sig, slt)
-        self._app.quit()
+        if not self._app.has_quit():
+            self._app.quit()
         self._app.processEvents()
 
     def _connectToQt(self, sender, signal, slot):

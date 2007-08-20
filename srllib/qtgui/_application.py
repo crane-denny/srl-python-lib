@@ -72,6 +72,10 @@ class Application(QApplication):
         cls.sig_quitting()
         QApplication.quit()
         cls.the_app.__hasQuit = True
+        
+    @classmethod
+    def has_quit(cls):
+        return cls.the_app.__hasQuit
 
     #}
 
