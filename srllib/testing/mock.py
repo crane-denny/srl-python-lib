@@ -168,7 +168,15 @@ class Mock(object):
     
     @property
     def mockAccessedAttrs(self):
+        """ All accessed attributes.
+        """
         return self.__methods.keys()
+
+    @classmethod
+    def mockGetAllInstances(cls):
+        """ Get all instances of this mock class.
+        """
+        return cls.mockInstances[cls]
     
     def mockClearCalls(self):
         """ Clear all calls registered so far. """

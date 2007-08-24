@@ -1,7 +1,8 @@
 """ Unit testing functionality. """
 import unittest, os.path, sys, shutil, tempfile
 
-import mock, srllib.util
+import srllib.util
+from mock import Mock
 
 # This flag makes unittest omit our test methods in failure tracebacks, like the standard test methods.
 __unittest = True
@@ -42,7 +43,7 @@ class TestCase(unittest.TestCase):
             srllib.util.remove_dir(dtemp, True, True)
 
         # Reset Mock register
-        mock.Mock.mockInstances.clear()
+        Mock.mockInstances.clear()
 
     def assertNot(self, val, msg=None):
         self.assert_(not val, msg=msg)
