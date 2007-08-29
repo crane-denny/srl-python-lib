@@ -49,16 +49,15 @@ class GuiTestCase(TestCase):
         qApp = cls.qApp = cls.QApplicationClass(sys.argv)
         return qApp
 
-    def setUp(self, widgetClass, *args, **kwds):
+    def setUp(self, widgetClass, *args):
         """ @param widgetClass: Widget class to instantiate.
         @param args: Arguments to widget initializer.
-        @param kwds: Keywords to widget initializer.
         """
         TestCase.setUp(self)
         self._app = self.__class__.createApplication()
         assert type(self._app) is self.__class__.QApplicationClass
         self._app.processEvents()
-        self._widget = widgetClass(*args, **kwds)
+        self._widget = widgetClass(*args)
         self.__qtConns = []
         self._widgetController = WidgetController(self._app)
 

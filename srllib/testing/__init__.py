@@ -398,8 +398,8 @@ def run_tests(package_name, gui=False, ignore=[]):
     import optparse, nose.core
 
     if gui:
-        import gui, srllib.qtgui
-        gui.GuiTestCase.QApplicationClass = srllib.qtgui.Application
+        import srllib.testing.qtgui, srllib.qtgui
+        srllib.testing.qtgui.GuiTestCase.QApplicationClass = srllib.qtgui.Application
     sys.argv.append("--cover-package=%s" % (package_name,))
     # Can't find a better way to make nose ignore this function :(
     sys.argv.append("--exclude=%s" % ("run_tests",))
