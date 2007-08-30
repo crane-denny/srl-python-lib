@@ -167,6 +167,7 @@ class Mock(object):
         return self.__methods.setdefault(name, MockCallable(name, self))
     
     def __call__(self, *args, **kwds):
+        """ Allow calling directly. """
         return self.__getattr__("__call__")(*args, **kwds)
     
     @property
