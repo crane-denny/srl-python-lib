@@ -59,6 +59,8 @@ __version__ = "0.2.0"
 import inspect
 import re
 
+import srllib.inspect
+
 class MockInterfaceError(Exception):
     pass
 
@@ -112,8 +114,8 @@ class Mock(object):
             # Verify interface versus mocked class
             assert inspect.isclass(realClass)
             assert not issubclass(realClass, (MockCallable, Mock)), realClass
-            self.__realClassMethods = dict(inspect.getmembers(realClass,
-                    inspect.isroutine))
+            self.__realClassMethods = srllib.inspect.get_members(realClass,
+                    inspect.isroutine)
             
             # Verify that mocked methods exist in real class
             for retMethod in self.mockReturnValues.keys():
@@ -123,16 +125,16 @@ class Mock(object):
             
             # Verify that mocked properties exist in real class
             
-            realprops = self.__realClassProperties = dict(
-                inspect.getmembers(realClass, inspect.isdatadescriptor))
+            realprops = self.__realClassProperties = \
+                srllib.inspect.get_members(realClass, inspect.isdatadescriptor)
             for name in properties:
                 if  name not in realprops:
                     raise MockInterfaceError("'%s' is not a property of '%s'" %
                             (name, realClass))
                 
             # Now properties
-            mockprops = dict(inspect.getmembers(self.__class__,
-                inspect.isdatadescriptor))
+            mockprops = srllib.inspect.get_members(self.__class__,
+                inspect.isdatadescriptor)
             for name, prop in mockprops.items():
                 if name.startswith("mock"):
                     continue
@@ -286,10 +288,9 @@ be to %s, but it was to %s instead" % (index, name, call.name,))
             self.mockCheckNamedCall(tester, methodName, i, *args, **kwds)
      
     def __setupSubclassMethodInterceptors(self):
-        methods = inspect.getmembers(self.__class__, inspect.isroutine)
-        baseMethods = dict(inspect.getmembers(Mock, inspect.ismethod))
-        for m in methods:
-            name = m[0]
+        methods = srllib.inspect.get_members(self.__class__, inspect.isroutine)
+        baseMethods = srllib.inspect.get_members(Mock, inspect.ismethod)
+        for name in methods:
             # Don't record calls to methods of Mock base class or methods
             # that start with 'mock'.
             if name not in baseMethods and not name.startswith("mock"):
