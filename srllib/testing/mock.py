@@ -229,9 +229,10 @@ class Mock(object):
     def mockCheckCall(self, tester, index, name, *args, **kwargs):
         """ Test that the index-th call had the specified name and
         parameters.
-        @raise IndexError: No call with this index.
         """
-        call = self.mockAllCalledMethods[index]
+        try: call = self.mockAllCalledMethods[index]
+        except IndexError:
+            tester.fail("No call with index %d" % index)
         tester.assertEqual(name, call.name, "Expected call number %d to \
 be to %s, but it was to %s instead" % (index, name, call.name,))
         call.checkArgs(tester, *args, **kwargs)
