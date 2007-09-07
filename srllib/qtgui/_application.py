@@ -131,13 +131,14 @@ class Application(QApplication):
             self.sig_exception(exc, value, tb)
 
             self.__timer.stop()
-            thrdSpecific = ""
-            if in_thread:
-                thrdSpecific = " in thread %s" % (in_thread,) 
-                
-            msg = ' '.join(traceback.format_exception(exc, value, tb))
-
-            message_critical("Fatal Error", "An unexpected exception was encountered%s, \
+            # Don't act on Ctrl+C
+            if not exc is KeyboardInterrupt:
+                thrdSpecific = ""
+                if in_thread:
+                    thrdSpecific = " in thread %s" % (in_thread,) 
+                    
+                msg = ' '.join(traceback.format_exception(exc, value, tb))
+                message_critical("Fatal Error", "An unexpected exception was encountered%s, \
 the application will have to be shut down." % (thrdSpecific,), detailedText=msg, informativeText=\
 "The detailed text provides full technical information of how the error happened, so \
 developers may resolve the problem. This information should also be visible in the \
