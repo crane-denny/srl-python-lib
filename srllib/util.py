@@ -35,15 +35,20 @@ def _make_decorator(func):
 
 Checksum_Hex, Checksum_Binary = 0, 1
 
-def get_checksum(path, format=Checksum_Hex):
+def get_checksum(path, format=Checksum_Hex, callback=no_op):
     """ Obtain the sha1 checksum of a file or directory.
 
-    If path points to a directory, a collective checksum is calculated recursively for all files
-    in the directory tree.
+    If path points to a directory, a collective checksum is calculated
+    recursively for all files in the directory tree.
     @param path: Path to file or directory
     @param format: One of L{Checksum_Hex}, L{Checksum_Binary}.
+    @param no_op: Optionally supply a callback to be periodically called. Raise
+    Canceled from this to cancel the operation.
+    @return: If hexadecimal, a 40 byte hexadecimal digest. If binary, a 20byte
+    binary digest.
     @raise ValueError: Invalid format.
-    @return: If hexadecimal, a 40 byte hexadecimal digest. If binary, a 20byte binary digest.
+    @raise Canceled: The callback indicated that the operation should be
+    canceled.
     """
     if format not in (Checksum_Hex, Checksum_Binary):
         raise ValueError("Invalid format")
@@ -52,6 +57,7 @@ def get_checksum(path, format=Checksum_Hex):
         f = file(path)
         try:
             while True:
+                callback()
                 bytes = f.read(8192)
                 shaObj.update(bytes)
                 if len(bytes) < 8192:
@@ -242,8 +248,8 @@ def get_file_permissions(path):
 def move_file(src, dest, force=False):
     """ Move a file, cross-platform safe.
 
-    This a simple convenience wrapper, for handling snags that may arise on different
-    platforms.
+    This a simple convenience wrapper, for handling snags that may arise on
+    different platforms.
     @param force: On Windows, overwrite write-protected destination?
     """
     if get_os_name() == Os_Windows and os.path.isfile(dest):    #pragma: optional
@@ -341,7 +347,8 @@ def copy_file(sourcePath, destPath, callback=no_op):
     """ Copy a file.
     @param sourcePath: Source file path.
     @param destPath: Destination file path.
-    @param callback: Optional callback to be invoked periodically with progress status.
+    @param callback: Optional callback to be invoked periodically with progress
+    status.
     raise PermissionsError: Missing filesystem permissions.
     """
     _copy_file(sourcePath, destPath, callback)
@@ -388,11 +395,13 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
     """ Copy a directory and its contents.
     @param sourcedir: Source directory.
     @param destdir: Destination directory.
-    @param callback: Optional callback to be invoked periodically with progress status.
+    @param callback: Optional callback to be invoked periodically with progress
+    status.
     @param ignore: Optional list of filename glob patterns to ignore.
-    @param force: Force copying even if destination exists (implies deleting destination)?
-    @raise DirectoryExists: The destination directory already exists (and C{force} is not
-    specified).
+    @param force: Force copying even if destination exists (implies deleting
+    destination)?
+    @raise DirectoryExists: The destination directory already exists (and
+    C{force} is not specified).
     @raise PermissionsError: Missing permission to perform operation.
     """
     if os.path.exists(destdir):
@@ -401,8 +410,8 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
         remove_file_or_dir(destdir)
 
     def filter(names):
-        """ Filter list of filesystem names in-place. When using os.walk, directories removed
-        from the list won't be traversed. """
+        """ Filter list of filesystem names in-place. When using os.walk,
+        directories removed from the list won't be traversed. """
         for ptrn in ignore:
             for name in names[:]:
                 if fnmatch.fnmatch(name, ptrn):
@@ -439,7 +448,8 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
         for f in filter(fnames):
             srcPath = os.path.join(dpath, f)
             dstPath = replace_root(srcPath, destdir, sourcedir)
-            readSoFar = _copy_file(srcPath, dstPath, callback, allBytes, readSoFar)
+            readSoFar = _copy_file(srcPath, dstPath, callback, allBytes,
+                readSoFar)
 
 def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
         encoding=None, dir=None):
@@ -460,8 +470,8 @@ def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
     os.close(fd)
     
     if not close or content:
-        # Open file directly instead of using fdopen, since the latter will return
-        # a file with a bogus name
+        # Open file directly instead of using fdopen, since the latter will
+        # return a file with a bogus name
         try:
             if encoding is None:
                 f = file(fname, "w+")
@@ -550,8 +560,8 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
     @return: Pair of mismatched and failed pathnames, respectively
     """
     def checkfiles(path0, path1):
-        chksum0, chksum1 = get_checksum(path0, format=Checksum_Binary), get_checksum(
-                path1, format=Checksum_Binary)
+        chksum0, chksum1 = (get_checksum(path0, format=Checksum_Binary),
+            get_checksum(path1, format=Checksum_Binary))
         r = chksum0 == chksum1
         if not r:
             sys.stderr.write("%s mismatched against %s because %s != %s\n" %
@@ -589,7 +599,8 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
         assert reldir != dpath, dpath
         
         contents0 = dnames + fnames
-        contents1 = [e for e in os.listdir(os.path.join(dir1, reldir)) if not e in ignore]
+        contents1 = [e for e in os.listdir(os.path.join(dir1, reldir)) if e not
+            in ignore]
 
         lnth0, lnth1 = len(contents0), len(contents1)
         if lnth0 < lnth1:
@@ -617,7 +628,8 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
                     mismatched = s0[2:] != s1[2:]   # Ignore format and size
                     if mismatched:
                         # No need to traverse this directory
-                        sys.stderr.write("Mismatched: %r, %r\n" % (s0[1:], s1[1:]))
+                        sys.stderr.write("Mismatched: %r, %r\n" % (s0[1:],
+                            s1[1:]))
                         dnames.remove(name)
                 if mismatched:
                     mismatch.append(relpath)
