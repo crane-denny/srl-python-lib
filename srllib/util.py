@@ -208,7 +208,7 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
         try:
             assert not os.listdir(path), os.listdir(path)
             try: os.rmdir(path)
-            except OSError, err:
+            except OSError:
                 if not ignore_errors:
                     raise
         finally:
@@ -431,7 +431,6 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
 
     # First invoke the callback with a progress of 0
     callback(0)
-    bytes = 0
     allBytes = float(allBytes)
     # Use a long to make sure it can hold a long enough number
     readSoFar = long(0)
