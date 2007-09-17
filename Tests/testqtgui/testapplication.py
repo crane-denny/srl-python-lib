@@ -10,7 +10,6 @@ class ApplicationTest(TestCase):
             self.__invoked = (exc, value, tb, threadname)
             
         def raiser():
-            print "Raising"
             raise KeyboardInterrupt
         
         def quitter():
@@ -22,7 +21,9 @@ class ApplicationTest(TestCase):
         QTimer.singleShot(1, quitter)
         self.__invoked = None
         app.exec_()
-        try: exc = self.__invoked[0]
+        try: exc, val, tb = self.__invoked[:3]
         except TypeError:
             self.fail("Exception hook not called")
-        self.assertIs(exc, KeyboardInterrupt, "Unexpected exception type: %r" % exc)
+        if exc is not KeyboardInterrupt:
+            import traceback; traceback.print_exception(exc, val, tb)
+            self.fail("Unexpected exception type: %r" % exc)
