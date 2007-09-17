@@ -346,6 +346,15 @@ class FileSystemTest(TestCase):
     def test_clean_path(self):
         self.assertEqual(util.clean_path(os.path.join("dir", "..", "file")),
                 os.path.join(os.path.abspath("file")))
+        
+    def test_get_checksum_cancel(self):
+        """ Test canceling checksum calculation. """
+        def callback():
+            raise _srlerror.Canceled
+        
+        path = util.create_file(self._get_tempfname(), "Test")
+        self.assertRaises(_srlerror.Canceled, util.get_checksum, path, callback=
+            callback)
 
     def __create_dir(self):
         """ Create directory with contents. """

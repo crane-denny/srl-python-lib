@@ -195,6 +195,10 @@ class TestCase(unittest.TestCase):
         dtemp = tempfile.mkdtemp(*args, **kwds)
         self._tempdirs.append(dtemp)
         return dtemp
+    
+    def _get_privattr(self, obj, name):
+        """ Get a private (name mangled) attribute of an object. """
+        return getattr(obj, "_%s%s" % (obj.__class__.__name__, name))
 
 class TestPersistent(TestCase):
     pass
