@@ -390,24 +390,29 @@ def remove_file_or_dir(path, force=False, recurse=True):
 class DestinationExists(SrlError):
     pass
 
+CopyDir_Refuse, CopyDir_Delete, CopyDir_Merge = range(3)
+
 @_raise_permissions
-def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
+def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_Refuse):
     """ Copy a directory and its contents.
     @param sourcedir: Source directory.
     @param destdir: Destination directory.
     @param callback: Optional callback to be invoked periodically with progress
     status.
     @param ignore: Optional list of filename glob patterns to ignore.
-    @param force: Force copying even if destination exists (implies deleting
-    destination)?
+    @param mode: Specify the copying mode. CopyDir_Refuse means to refuse copying
+    onto an existing directory, CopyDir_Delete means delete existing
+    destination, CopyDir_Merge means copying contents of source directory into
+    destination directory.
     @raise DirectoryExists: The destination directory already exists (and
-    C{force} is not specified).
+    mode is CopyDir_Refuse).
     @raise PermissionsError: Missing permission to perform operation.
     """
     if os.path.exists(destdir):
-        if not force:
+        if mode == CopyDir_Refuse:
             raise DestinationExists(destdir)
-        remove_file_or_dir(destdir)
+        elif mode == CopyDir_Delete:
+            remove_file_or_dir(destdir)
 
     def filter(names):
         """ Filter list of filesystem names in-place. When using os.walk,
@@ -418,7 +423,8 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
                     names.remove(name)
         return names
 
-    os.makedirs(destdir)
+    if not os.path.exists(destdir):
+        os.makedirs(destdir)
     if platform.system() != "Windows":
         # Won't work on Windows
         shutil.copystat(sourcedir, destdir)
@@ -438,6 +444,8 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
         for d in filter(dnames):
             srcPath = os.path.join(dpath, d)
             dstPath = replace_root(srcPath, destdir, sourcedir)
+            if os.path.exists(dstPath):
+                remove_file_or_dir(dstPath)
             os.mkdir(dstPath)
             if platform.system() != "Windows":
                 # Won't work on Windows
@@ -447,6 +455,8 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
         for f in filter(fnames):
             srcPath = os.path.join(dpath, f)
             dstPath = replace_root(srcPath, destdir, sourcedir)
+            if os.path.exists(dstPath):
+                remove_file_or_dir(dstPath)
             readSoFar = _copy_file(srcPath, dstPath, callback, allBytes,
                 readSoFar)
 

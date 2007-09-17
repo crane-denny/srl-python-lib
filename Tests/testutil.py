@@ -56,7 +56,7 @@ class FileSystemTest(TestCase):
         """ Test removing a missing directory. """
         self.assertRaises(ValueError, util.remove_dir, "nosuchdir")
 
-    def test_copydir(self):
+    def test_copy_dir(self):
         """ Test copying a directory.
 
         When a directory is copied, the client callback should be called periodically with
@@ -83,12 +83,12 @@ class FileSystemTest(TestCase):
         # This should fail, because the conflicting directory is protected from
         # deletion
         self.assertRaises(util.PermissionsError, util.copy_dir, dpath,
-                os.path.join(dstDir, "testdir"), force=True)
+                os.path.join(dstDir, "testdir"), mode=util.CopyDir_Delete)
         if util.get_os()[0] == util.Os_Windows:
             util.chmod(os.path.join(dstDir, "testdir"), 0700)
         else:
             util.chmod(dstDir, 0700)
-        util.copy_dir(dpath, dstDir, force=True)
+        util.copy_dir(dpath, dstDir, mode=util.CopyDir_Delete)
 
         util.remove_dir(dstDir, recurse=True)
         self.__progress = []
@@ -102,29 +102,57 @@ class FileSystemTest(TestCase):
         os.mkdir(os.path.join(dpath, ".svn"))
         util.create_file(os.path.join(dpath, "test"))
         dstDir = self._get_tempdir()
-        util.copy_dir(dpath, dstDir, ignore=[".*"], force=True)
+        util.copy_dir(dpath, dstDir, ignore=[".*"], mode=util.CopyDir_Delete)
         self.assertEqual(os.listdir(dstDir), ["test"])
 
-    def test_copy_noperm(self):
+    def test_copy_dir_noperm(self):
         """ Test copying a directory with missing permissions. """
         dpath0, dpath1 = self.__create_dir(), self._get_tempdir()
         if util.get_os()[0] != util.Os_Windows:
             # Can't remove read permission on Windows
             util.chmod(dpath0, 0)
             self.assertRaises(util.PermissionsError, util.copy_dir, dpath0,
-                    dpath1, force=True)
+                    dpath1, mode=util.CopyDir_Delete)
             util.chmod(dpath0, 0700)
             # Test directory permissions
             util.chmod(os.path.join(dpath0, "testdir"), 0000)
             self.assertRaises(util.PermissionsError, util.copy_dir, dpath0,
-                    dpath1, force=True)
+                    dpath1, mode=util.CopyDir_Delete)
             util.chmod(os.path.join(dpath0, "testdir"), 0700)
             # Test file permissions
             util.chmod(os.path.join(dpath0, "test"), 0000)
             self.assertRaises(util.PermissionsError, util.copy_dir, dpath0,
-                    dpath1, force=True)
+                    dpath1, mode=util.CopyDir_Delete)
+            
+    def test_copy_dir_delete(self):
+        """ Test copying directory after first deleting the destination. """
+        srcdir = self.__create_dir()
+        dstdir = self._get_tempdir()
+        util.copy_dir(srcdir, dstdir, mode=util.CopyDir_Delete)
+        self.assertEqual(os.listdir(dstdir), os.listdir(srcdir))
+    
+    def test_copy_dir_merge(self):
+        """ Test copying directory while merging new contents with old. """
+        srcdir = self._get_tempdir()
+        dstdir = self._get_tempdir()
+        # Make sure that the merge operation replaces directories in the
+        # destination directory with files in the source directory and vice
+        # versa
+        os.mkdir(os.path.join(srcdir, "testdir"))
+        util.create_file(os.path.join(srcdir, "testfile"), "Test")
+        util.create_file(os.path.join(srcdir, "oldfile"), "Test")
+        util.create_file(os.path.join(dstdir, "newfile"), "Test")
+        util.create_file(os.path.join(dstdir, "testdir"), "Test")
+        os.mkdir(os.path.join(dstdir, "testfile"))
+        util.copy_dir(srcdir, dstdir, mode=util.CopyDir_Merge)
+        
+        self.assertSortedEqual(os.listdir(dstdir), ["testdir", "testfile",
+            "oldfile", "newfile"])
+        self.assert_(os.path.isdir(os.path.join(dstdir, "testdir")))
+        for fname in ("testfile", "oldfile", "newfile"):
+            self.assert_(os.path.isfile(os.path.join(dstdir, fname)))
 
-    def test_copyfile(self):
+    def test_copy_file(self):
         src, dst = self._get_tempfile(), self._get_tempfname()
         try: src.write("Test")
         finally: src.close()
