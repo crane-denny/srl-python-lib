@@ -20,8 +20,11 @@ class _AsyncEvent(QEvent):
 
 class Application(QApplication):
     """ Specialize QApplication to trap Python exceptions, inform the user and quit.
-    @cvar the_app: The L{application<Application>} object, if instantiated (otherwise None).
+    @cvar the_app: The L{application<Application>} object, if instantiated
+    (otherwise None).
     @ivar sig_exception: Emitted when detecting an unhandled exception.
+    Parameters: Exception type, exception value, traceback, name of thread (None
+    if main thread).
     """
     import srllib.signal
     sig_quitting = srllib.signal.Signal()
@@ -35,7 +38,7 @@ class Application(QApplication):
 
         self.sig_exception = Signal()
 
-        self.__once, self.__hasQuit, self.__call_queue = True, False, []
+        self.__hasQuit, self.__call_queue = False, []
         if catch_exceptions:
             sys.excepthook = self.__exchook
             srllib.threading.register_exceptionhandler(self.__thrdexc_hook)
@@ -53,8 +56,9 @@ class Application(QApplication):
 
     @staticmethod
     def setOverrideCursor(cursor):
-        """ Set overriding cursor for application. Argument cursor should either be suitable
-        enumeration or a QCursor. """
+        """ Set overriding cursor for application. Argument cursor should either
+        be suitable enumeration or a QCursor.
+        """
         if type(cursor) is not QCursor:
             QApplication.setOverrideCursor(QCursor(cursor))
         else:
@@ -125,28 +129,25 @@ class Application(QApplication):
                 in_thread=exc.name)
 
     def __exchook(self, exc, value, tb, in_thread=None):
-        if self.__once:
-            self.__once = False
+        self.sig_exception(exc, value, tb, in_thread)
 
-            self.sig_exception(exc, value, tb)
-
-            self.__timer.stop()
-            # Don't act on Ctrl+C
-            if not exc is KeyboardInterrupt:
-                thrdSpecific = ""
-                if in_thread:
-                    thrdSpecific = " in thread %s" % (in_thread,) 
-                    
-                msg = ' '.join(traceback.format_exception(exc, value, tb))
-                message_critical("Fatal Error", "An unexpected exception was encountered%s, \
+        self.__timer.stop()
+        # Don't act on Ctrl+C
+        if not exc is KeyboardInterrupt:
+            thrdSpecific = ""
+            if in_thread:
+                thrdSpecific = " in thread %s" % (in_thread,) 
+                
+            msg = ' '.join(traceback.format_exception(exc, value, tb))
+            message_critical("Fatal Error", "An unexpected exception was encountered%s, \
 the application will have to be shut down." % (thrdSpecific,), detailedText=msg, informativeText=\
 "The detailed text provides full technical information of how the error happened, so \
 developers may resolve the problem. This information should also be visible in the \
 application log.")
 
-            if not self.__hasQuit:
-                self.quit()
-            self.processEvents()
+        if not self.__hasQuit:
+            self.quit()
+        self.processEvents()
 
     def __exec_call(self):
         toCall, args, kwds = self.__call_queue.pop(0)

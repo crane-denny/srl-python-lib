@@ -38,12 +38,12 @@ Checksum_Hex, Checksum_Binary = 0, 1
 def get_checksum(path, format=Checksum_Hex):
     """ Obtain the sha1 checksum of a file or directory.
 
-    If path points to a directory, a collective checksum is calculated recursively for all files
-    in the directory tree.
+    If path points to a directory, a collective checksum is calculated
+    recursively for all files in the directory tree.
     @param path: Path to file or directory
     @param format: One of L{Checksum_Hex}, L{Checksum_Binary}.
     @raise ValueError: Invalid format.
-    @return: If hexadecimal, a 40 byte hexadecimal digest. If binary, a 20byte binary digest.
+    @return: If hexadecimal, a 40 byte hexadecimal digest. If binary, a 20bytebinary digest.
     """
     if format not in (Checksum_Hex, Checksum_Binary):
         raise ValueError("Invalid format")
@@ -242,8 +242,8 @@ def get_file_permissions(path):
 def move_file(src, dest, force=False):
     """ Move a file, cross-platform safe.
 
-    This a simple convenience wrapper, for handling snags that may arise on different
-    platforms.
+    This a simple convenience wrapper, for handling snags that may arise on
+    different platforms.
     @param force: On Windows, overwrite write-protected destination?
     """
     if get_os_name() == Os_Windows and os.path.isfile(dest):    #pragma: optional
@@ -341,7 +341,8 @@ def copy_file(sourcePath, destPath, callback=no_op):
     """ Copy a file.
     @param sourcePath: Source file path.
     @param destPath: Destination file path.
-    @param callback: Optional callback to be invoked periodically with progress status.
+    @param callback: Optional callback to be invoked periodically with progress
+    status.
     raise PermissionsError: Missing filesystem permissions.
     """
     _copy_file(sourcePath, destPath, callback)
@@ -388,11 +389,13 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
     """ Copy a directory and its contents.
     @param sourcedir: Source directory.
     @param destdir: Destination directory.
-    @param callback: Optional callback to be invoked periodically with progress status.
+    @param callback: Optional callback to be invoked periodically with progress
+    status.
     @param ignore: Optional list of filename glob patterns to ignore.
-    @param force: Force copying even if destination exists (implies deleting destination)?
-    @raise DirectoryExists: The destination directory already exists (and C{force} is not
-    specified).
+    @param force: Force copying even if destination exists (implies deleting
+    destination)?
+    @raise DirectoryExists: The destination directory already exists (and
+    C{force} is not specified).
     @raise PermissionsError: Missing permission to perform operation.
     """
     if os.path.exists(destdir):
@@ -401,8 +404,8 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
         remove_file_or_dir(destdir)
 
     def filter(names):
-        """ Filter list of filesystem names in-place. When using os.walk, directories removed
-        from the list won't be traversed. """
+        """ Filter list of filesystem names in-place. When using os.walk,
+        directories removed from the list won't be traversed. """
         for ptrn in ignore:
             for name in names[:]:
                 if fnmatch.fnmatch(name, ptrn):
@@ -439,7 +442,8 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
         for f in filter(fnames):
             srcPath = os.path.join(dpath, f)
             dstPath = replace_root(srcPath, destdir, sourcedir)
-            readSoFar = _copy_file(srcPath, dstPath, callback, allBytes, readSoFar)
+            readSoFar = _copy_file(srcPath, dstPath, callback, allBytes,
+                readSoFar)
 
 def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
         encoding=None, dir=None):
