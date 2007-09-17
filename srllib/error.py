@@ -7,3 +7,6 @@ class BusyError(SrlError):
 
 class NotFound(SrlError):
     """ General indication that a resource was not found. """
+    
+class Canceled(SrlError):
+    """ The operation was canceled. """

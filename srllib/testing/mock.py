@@ -71,7 +71,8 @@ class Mock(object):
     All method calls are stored for later examination.
     @cvar mockInstances: Dictionary of all mock instances, indexed on class to
     discern different mock subclasses.
-    @cvar _MockRealClass: For subclasses, indicate the class that is being mocked.
+    @cvar _MockRealClass: For subclasses, indicate the class that is being
+    mocked.
     """
     mockInstances = {}
     _MockRealClass = None
@@ -208,21 +209,20 @@ class Mock(object):
         mock_callable.mockSetRaises(exc)
         
     def mockGetCall(self, idx):
-        """ Get a certain call that was made. """
+        """ Get a certain L{call<MockCall>} that was made. """
         return self.mockAllCalledMethods[idx]
 
     def mockGetAllCalls(self):
-        """
-        @return: List of L{MockCall} objects,
-        representing all the methods in the order they were called.
+        """ Get all calls.
+        @return: List of L{MockCall} objects, representing all the methods in
+        the order they were called.
         """
         return self.mockAllCalledMethods
 
     def mockGetNamedCalls(self, methodName):
-        """
-        @return: List of L{MockCall} objects,
-        representing all the calls to the named method in the order they were
-        called.
+        """ Get all calls to a certain method.
+        @return: List of L{MockCall} objects, representing all the calls to the
+        named method in the order they werecalled.
         """
         return self.mockCalledMethods.get(methodName, [])
 
@@ -327,12 +327,14 @@ found in the original class (%s)" % (name, self.__realClass.__name__))
         numPosCallParams = 1 + len(callParams)
 
         if numPosCallParams > len(args) and not varargs:
-            raise MockInterfaceError("Original %s() takes at most %s arguments (%s given)" % 
+            raise MockInterfaceError("Original %s() takes at most %s arguments \
+(%s given)" % 
                 (name, len(args), numPosCallParams))
 
         # Get the number of positional arguments that appear in the call,
         # also check for duplicate parameters and unknown parameters
-        numPosSeen = _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw)
+        numPosSeen = _getNumPosSeenAndCheck(numPosCallParams, callKwParams,
+            args, varkw)
 
         lenArgsNoDefaults = len(args) - len(defaults or [])
         if numPosSeen < lenArgsNoDefaults:
@@ -354,19 +356,21 @@ def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
         posSeen[arg] = True
     for kwp in callKwParams:
         if posSeen.has_key(kwp):
-            raise MockInterfaceError("%s appears as both a positional and named parameter." % kwp)
+            raise MockInterfaceError("%s appears as both a positional and named \
+parameter." % kwp)
         if kwp in args:
             posSeen[kwp] = True
         elif not varkw:
-            raise MockInterfaceError("Original method does not have a parameter '%s'" % kwp)
+            raise MockInterfaceError("Original method does not have a parameter \
+'%s'" % kwp)
     return len(posSeen)
 
 class MockCall:
     """ MockCall records the name and parameters of a call to an instance
     of a Mock class.
     
-    Instances of MockCall are created by the Mock class,
-    but can be inspected later as part of the test.
+    Instances of MockCall are created by the Mock class, but can be inspected
+    later as part of the test.
     @ivar name: Name of callable.
     @ivar args: Arguments to callable.
     @ivar kwargs: Keyword arguments to callable.
@@ -543,9 +547,9 @@ def expectException(exception, *args, **kwargs):
 
 
 def expectParam(paramIdx, cond):
-    '''check that the callObj is called with parameter specified by paramIdx (a position index or keyword)
-    fulfills the condition specified by cond.
-    cond is a function that takes a single argument, the value to test.
+    '''check that the callObj is called with parameter specified by paramIdx (a
+    position index or keyword) fulfills the condition specified by cond. cond is
+    a function that takes a single argument, the value to test.
     '''
     def fn(mockObj, callObj, idx):
         param = callObj.getParam(paramIdx)
