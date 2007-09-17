@@ -2,6 +2,7 @@
 """
 import sys, traceback, Queue
 from PyQt4.QtGui import *
+import warnings
 
 import srllib.threading
 from srllib.signal import Signal
@@ -72,7 +73,8 @@ class Application(QApplication):
 
     @classmethod
     def quit(cls):
-        assert not cls.the_app.__hasQuit, "The app has already quit"
+        if cls.the_app.__hasQuit:
+            warnings.warn("The app has already quit")
         cls.sig_quitting()
         QApplication.quit()
         cls.the_app.__hasQuit = True
