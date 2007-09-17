@@ -396,13 +396,14 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], force=False):
     @param sourcedir: Source directory.
     @param destdir: Destination directory.
     @param callback: Optional callback to be invoked periodically with progress
-    status.
+    status. Raise L{Canceled from this to cancel.
     @param ignore: Optional list of filename glob patterns to ignore.
     @param force: Force copying even if destination exists (implies deleting
     destination)?
     @raise DirectoryExists: The destination directory already exists (and
     C{force} is not specified).
     @raise PermissionsError: Missing permission to perform operation.
+    @raise Canceled: The callback requested canceling.
     """
     if os.path.exists(destdir):
         if not force:
