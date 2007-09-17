@@ -398,7 +398,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_Refuse)
     @param sourcedir: Source directory.
     @param destdir: Destination directory.
     @param callback: Optional callback to be invoked periodically with progress
-    status.
+    status. Raise L{Canceled from this to cancel.
     @param ignore: Optional list of filename glob patterns to ignore.
     @param mode: Specify the copying mode. CopyDir_Refuse means to refuse copying
     onto an existing directory, CopyDir_Delete means delete existing
@@ -407,6 +407,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_Refuse)
     @raise DirectoryExists: The destination directory already exists (and
     mode is CopyDir_Refuse).
     @raise PermissionsError: Missing permission to perform operation.
+    @raise Canceled: The callback requested canceling.
     """
     if os.path.exists(destdir):
         if mode == CopyDir_Refuse:
