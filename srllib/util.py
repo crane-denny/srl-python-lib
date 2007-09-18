@@ -222,7 +222,7 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
         return True
     
     if not os.path.exists(path):
-        raise ValueError(path)
+        raise ValueError("Directory doesn't exist: %s" % path)
 
     if recurse:
         for dpath, dnames, fnames in walkdir(path, topdown=False, errorfunc=
