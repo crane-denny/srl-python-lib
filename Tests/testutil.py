@@ -342,6 +342,12 @@ class FileSystemTest(TestCase):
         self.assertRaises(_srlerror.NotFound, util.resolve_path,
                 "There is no such executable.")
         
+    def test_resolve_path_badname(self):
+        """ resolve_path should not accept a pathname with directory components.
+        """
+        self.assertRaises(ValueError, util.resolve_path, os.path.join("dir",
+            "file"))
+        
     def test_compare_dirs(self):
         """ Test dir comparison. """
         dpath0 = self._get_tempdir()
