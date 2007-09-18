@@ -151,6 +151,37 @@ class FileSystemTest(TestCase):
         self.assert_(os.path.isdir(os.path.join(dstdir, "testdir")))
         for fname in ("testfile", "oldfile", "newfile"):
             self.assert_(os.path.isfile(os.path.join(dstdir, fname)))
+            
+    def test_copy_dir_writefile(self):
+        """ Test passing a custom writefile function to copy_dir. """
+        def copyfile(src, dst, callback):
+            self.__invoked = True
+            callback(50.0)
+            callback(100.0)
+        def callback(progress):
+            self.__progress.append(progress)
+            
+        srcdir, dstdir = self._get_tempdir(), self._get_tempdir()
+        util.create_file(os.path.join(srcdir, "test1"), "Test")
+        self.__invoked = False
+        self.__progress = []
+        util.copy_dir(srcdir, dstdir, mode=util.CopyDir_Delete, copyfile=
+            copyfile, callback=callback)
+        self.assert_(self.__invoked, "copyfile was not invoked")
+        self.assertEqual(self.__progress, [0, 50.0, 100.0],
+            "Wrong progress: %r" % self.__progress)
+        
+    if util.get_os_name() in util.OsCollection_Posix:
+        def test_copy_dir_symlink(self):
+            """ Test copying directory with symlink. """
+            srcdir, dstdir = self._get_tempdir(), self._get_tempdir()
+            util.create_file(os.path.join(srcdir, "test"), "Test")
+            os.symlink("test", os.path.join(srcdir, "sym"))
+            util.copy_dir(srcdir, dstdir, mode=util.CopyDir_Delete)
+            self.assert_(os.path.islink(os.path.join(dstdir, "sym")),
+                "Symlink dereferenced")
+            self.assertEqual(os.readlink(os.path.join(dstdir, "sym")), "test",
+                "Symlink not copied correctly")
 
     def test_copy_file(self):
         src, dst = self._get_tempfile(), self._get_tempfname()
