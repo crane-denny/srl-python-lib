@@ -315,43 +315,43 @@ def walkdir(path, errorfunc=None, topdown=True, ignore=None):
         yield path, dnames, fnames
 
 @_raise_permissions
-def _copy_file(srcPath, dstPath, callback, totalBytes=None, readSoFar=long(0)):
-    st = os.lstat(srcPath)
+def _copy_file(srcpath, dstpath, callback, totalbytes=None, readsofar=long(0)):
+    st = os.lstat(srcpath)
     sz = float(st.st_size)
-    if totalBytes is None:
-        totalBytes = sz
+    if totalbytes is None:
+        totalbytes = sz
     if sz == 0:
         # Just create the destination file
-        file(dstPath, "wb").close()
+        file(dstpath, "wb").close()
         callback(100)
     else:
-        src = file(srcPath, "rb")
-        dst = file(dstPath, "wb")
+        src = file(srcpath, "rb")
+        dst = file(dstpath, "wb")
         try:
             while True:
                 bytes = src.read(8192)
                 dst.write(bytes)
                 bytesRead = len(bytes)
-                readSoFar += bytesRead
-                callback(readSoFar / totalBytes * 100)
+                readsofar += bytesRead
+                callback(readsofar / totalbytes * 100)
                 if bytesRead < 8192:
                     break
         finally:
             src.close()
             dst.close()
 
-    shutil.copystat(srcPath, dstPath)
-    return readSoFar
+    shutil.copystat(srcpath, dstpath)
+    return readsofar
 
-def copy_file(sourcePath, destPath, callback=no_op):
+def copy_file(sourcepath, destpath, callback=no_op):
     """ Copy a file.
-    @param sourcePath: Source file path.
-    @param destPath: Destination file path.
+    @param sourcepath: Source file path.
+    @param destpath: Destination file path.
     @param callback: Optional callback to be invoked periodically with progress
     status.
     raise PermissionsError: Missing filesystem permissions.
     """
-    _copy_file(sourcePath, destPath, callback)
+    _copy_file(sourcepath, destpath, callback)
 
 @_raise_permissions
 def remove_file(path, force=False):
@@ -398,7 +398,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New):
     @param sourcedir: Source directory.
     @param destdir: Destination directory.
     @param callback: Optional callback to be invoked periodically with progress
-    status. Raise L{Canceled from this to cancel.
+    status. Raise L{Canceled} from this to cancel.
     @param ignore: Optional list of filename glob patterns to ignore.
     @param mode: Specify the copying mode. CopyDir_New means to refuse copying
     onto an existing directory, CopyDir_Delete means delete existing
