@@ -695,8 +695,10 @@ def chmod(path, mode, recursive=False):
 def resolve_path(executable):
     """ Resolve name of executable into absolute path.
     @raise NotFound: The executable was not found in path.
+    @raise ValueError: An invalid filename was passed.
     """
-    import os.path
+    if os.path.sep in executable:
+        raise ValueError("Invalid filename: %s" % executable)
     path = os.environ["PATH"].split(os.pathsep)
     if get_os_name() == Os_Windows:    # pragma: optional
         import win32api, pywintypes
