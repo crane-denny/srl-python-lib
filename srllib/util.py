@@ -415,7 +415,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
     ===================
     It is possible to specialize file copying by passing a function for the
     I{copyfile} parameter. This function receives for its two first arguments
-    file objects for the source and destination file respectively, and then a
+    pathnames for the source and destination file respectively, and then a
     callback function. This function is not called with directories or symlinks.
     
     The callback should be called periodically during copying, with progress
