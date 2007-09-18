@@ -315,11 +315,9 @@ def walkdir(path, errorfunc=None, topdown=True, ignore=None):
         yield path, dnames, fnames
 
 @_raise_permissions
-def _copy_file(srcpath, dstpath, callback, totalbytes=None, readsofar=long(0)):
-    st = os.lstat(srcpath)
+def _copy_file(srcpath, dstpath, callback):
+    st = os.stat(srcpath)
     sz = float(st.st_size)
-    if totalbytes is None:
-        totalbytes = sz
     if sz == 0:
         # Just create the destination file
         file(dstpath, "wb").close()
@@ -332,8 +330,7 @@ def _copy_file(srcpath, dstpath, callback, totalbytes=None, readsofar=long(0)):
                 bytes = src.read(8192)
                 dst.write(bytes)
                 bytesRead = len(bytes)
-                readsofar += bytesRead
-                callback(readsofar / totalbytes * 100)
+                callback(bytesRead / sz * 100)
                 if bytesRead < 8192:
                     break
         finally:
@@ -341,7 +338,6 @@ def _copy_file(srcpath, dstpath, callback, totalbytes=None, readsofar=long(0)):
             dst.close()
 
     shutil.copystat(srcpath, dstpath)
-    return readsofar
 
 def copy_file(sourcepath, destpath, callback=no_op):
     """ Copy a file.
@@ -392,9 +388,38 @@ class DestinationExists(SrlError):
 
 CopyDir_New, CopyDir_Delete, CopyDir_Merge = range(3)
 
+class _CopyDirCallback:
+    """ Translate from per-file progress to directory progress. """
+    def __init__(self, total, callback):
+        self.__total, self.__callback = (float(total), callback)
+        self.__progress = 0.0
+        
+    def __call__(self, progress):
+        self.__callback(self.__progress + progress*self.__cur_mult)
+        
+    def start_file(self, size):
+        if self.__total != 0:
+            self.__cur_mult = size / self.__total
+        else:
+            self.__cur_mult = 0
+        
+    def end_file(self):
+        self.__progress += 100 * self.__cur_mult
+
 @_raise_permissions
-def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New):
+def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
+    copyfile=None):
     """ Copy a directory and its contents.
+    
+    Custom File Copying
+    ===================
+    It is possible to specialize file copying by passing a function for the
+    I{copyfile} parameter. This function receives for its two first arguments
+    file objects for the source and destination file respectively, and then a
+    callback function. This function is not called with directories or symlinks.
+    
+    The callback should be called periodically during copying, with progress
+    percentage as a float.
     @param sourcedir: Source directory.
     @param destdir: Destination directory.
     @param callback: Optional callback to be invoked periodically with progress
@@ -404,6 +429,8 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New):
     onto an existing directory, CopyDir_Delete means delete existing
     destination, CopyDir_Merge means copying contents of source directory into
     destination directory.
+    @param copyfile: Optionally supply a custom function for copying individual
+    files.
     @raise DirectoryExists: The destination directory already exists (and
     mode is CopyDir_New).
     @raise PermissionsError: Missing permission to perform operation.
@@ -429,37 +456,46 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New):
     if platform.system() != "Windows":
         # Won't work on Windows
         shutil.copystat(sourcedir, destdir)
-    allBytes = 0
+    # We figure out the total number of bytes, for computing progress
+    allbytes = 0
     for dpath, dnames, fnames in walkdir(sourcedir):
         for d in filter(dnames):
-            allBytes += 1
+            allbytes += 1
         for f in filter(fnames):
-            allBytes += os.lstat(os.path.join(dpath, f)).st_size
+            allbytes += os.lstat(os.path.join(dpath, f)).st_size
 
+    if copyfile is None:
+        copyfile = _copy_file
+    mycallback = _CopyDirCallback(allbytes, callback)
+        
     # First invoke the callback with a progress of 0
     callback(0)
-    allBytes = float(allBytes)
-    # Use a long to make sure it can hold a long enough number
-    readSoFar = long(0)
     for dpath, dnames, fnames in walkdir(sourcedir):
         for d in filter(dnames):
-            srcPath = os.path.join(dpath, d)
-            dstPath = replace_root(srcPath, destdir, sourcedir)
-            if os.path.exists(dstPath):
-                remove_file_or_dir(dstPath)
-            os.mkdir(dstPath)
+            srcpath = os.path.join(dpath, d)
+            dstpath = replace_root(srcpath, destdir, sourcedir)
+            if os.path.exists(dstpath):
+                remove_file_or_dir(dstpath)
+            os.mkdir(dstpath)
             if platform.system() != "Windows":
                 # Won't work on Windows
-                shutil.copystat(srcPath, dstPath)
-            readSoFar += 1
-            callback(readSoFar / allBytes * 100)
+                shutil.copystat(srcpath, dstpath)
+            mycallback.start_file(1)
+            mycallback(100)
+            mycallback.end_file()
         for f in filter(fnames):
-            srcPath = os.path.join(dpath, f)
-            dstPath = replace_root(srcPath, destdir, sourcedir)
-            if os.path.exists(dstPath):
-                remove_file_or_dir(dstPath)
-            readSoFar = _copy_file(srcPath, dstPath, callback, allBytes,
-                readSoFar)
+            srcpath = os.path.join(dpath, f)
+            dstpath = replace_root(srcpath, destdir, sourcedir)
+            if os.path.exists(dstpath):
+                remove_file_or_dir(dstpath)
+            if hasattr(os, "symlink") and os.path.islink(srcpath):
+                linktgt = os.readlink(srcpath)
+                os.symlink(linktgt, dstpath)
+                continue
+                
+            mycallback.start_file(os.lstat(srcpath).st_size)
+            copyfile(srcpath, dstpath, mycallback)
+            mycallback.end_file()
 
 def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
         encoding=None, dir=None):
