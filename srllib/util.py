@@ -390,26 +390,27 @@ def remove_file_or_dir(path, force=False, recurse=True):
 class DestinationExists(SrlError):
     pass
 
-CopyDir_Refuse, CopyDir_Delete, CopyDir_Merge = range(3)
+CopyDir_New, CopyDir_Delete, CopyDir_Merge = range(3)
 
 @_raise_permissions
-def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_Refuse):
+def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New):
     """ Copy a directory and its contents.
     @param sourcedir: Source directory.
     @param destdir: Destination directory.
     @param callback: Optional callback to be invoked periodically with progress
-    status.
+    status. Raise L{Canceled from this to cancel.
     @param ignore: Optional list of filename glob patterns to ignore.
-    @param mode: Specify the copying mode. CopyDir_Refuse means to refuse copying
+    @param mode: Specify the copying mode. CopyDir_New means to refuse copying
     onto an existing directory, CopyDir_Delete means delete existing
     destination, CopyDir_Merge means copying contents of source directory into
     destination directory.
     @raise DirectoryExists: The destination directory already exists (and
-    mode is CopyDir_Refuse).
+    mode is CopyDir_New).
     @raise PermissionsError: Missing permission to perform operation.
+    @raise Canceled: The callback requested canceling.
     """
     if os.path.exists(destdir):
-        if mode == CopyDir_Refuse:
+        if mode == CopyDir_New:
             raise DestinationExists(destdir)
         elif mode == CopyDir_Delete:
             remove_file_or_dir(destdir)
