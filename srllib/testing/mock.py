@@ -65,8 +65,7 @@ class MockInterfaceError(Exception):
     pass
 
 class Mock(object):
-    """
-    The Mock class simulates any other class for testing purposes.
+    """ The Mock class simulates any other class for testing purposes.
     
     All method calls are stored for later examination.
     @cvar mockInstances: Dictionary of all mock instances, indexed on class to
