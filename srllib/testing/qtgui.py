@@ -37,24 +37,39 @@ class WidgetController(object):
         self.__app.processEvents()
 
 class GuiTestCase(TestCase):
-    __qAppInitialized = False
     QApplicationClass = QApplication
+    q_app = None
 
     def __init__(self, *args, **kwds):
         TestCase.__init__(self, *args, **kwds)
 
     @classmethod
-    def createApplication(cls):
+    def create_application(cls):
         import sys
-        qApp = cls.qApp = cls.QApplicationClass(sys.argv)
-        return qApp
+        cls.q_app = cls.QApplicationClass(sys.argv)
+        return cls.q_app
+    
+    @classmethod
+    def close_application(cls):
+        cls.q_app.quit()
+        cls.q_app.processEvents()
+        cls.q_app = None
 
     def setUp(self, widgetClass, *args):
         """ @param widgetClass: Widget class to instantiate.
         @param args: Arguments to widget initializer.
         """
         TestCase.setUp(self)
-        self._app = self.__class__.createApplication()
+        
+        if (self.__class__.q_app is not None):
+            # Reuse existing QApplication 
+            self._app = self.__class__.q_app 
+            self.__created_app = False
+        else:
+            # Set up QApplication for this test
+            self._app = self.__class__.create_application()
+            self.__created_app = True
+            
         assert type(self._app) is self.__class__.QApplicationClass
         self._app.processEvents()
         self._widget = widgetClass(*args)
@@ -67,9 +82,8 @@ class GuiTestCase(TestCase):
         self._widget.close()
         for sender, sig, slt in self.__qtConns:
             QObject.disconnect(sender, sig, slt)
-        if not self._app.has_quit():
-            self._app.quit()
-        self._app.processEvents()
+        if self.__created_app:
+            self.close_application()
 
     def _connectToQt(self, sender, signal, slot):
         QObject.connect(sender, SIGNAL(signal), slot)
