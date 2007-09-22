@@ -51,8 +51,10 @@ class GuiTestCase(TestCase):
     
     @classmethod
     def close_application(cls):
-        cls.q_app.quit()
-        cls.q_app.processEvents()
+        if not cls.q_app.has_quit():
+            # Perhaps already closed due to an exception?
+            cls.q_app.quit()
+            cls.q_app.processEvents()
         cls.q_app = None
 
     def setUp(self, widgetClass, *args):
