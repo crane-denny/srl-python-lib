@@ -395,7 +395,8 @@ def run_tests(package_name, gui=False, ignore=[]):
     """ Use C{nose} for discovering/running tests.
 
     After finishing, sys.exit is called with the success status.
-    @param package_name: Name of package that is tested. Used for analyzing coverage by tests.
+    @param package_name: Name of package that is tested. Used for analyzing
+    coverage by tests.
     @param gui: Do the tests involve GUI code?
     @param ignore: Modules to ignore when analyzing coverage.
     """
