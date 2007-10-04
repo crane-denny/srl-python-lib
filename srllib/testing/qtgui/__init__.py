@@ -57,8 +57,9 @@ class GuiTestCase(TestCase):
             cls.q_app.processEvents()
         cls.q_app = None
 
-    def setUp(self, widgetClass, *args):
-        """ @param widgetClass: Widget class to instantiate.
+    def setUp(self, widgetClass=None, *args):
+        """ @param widgetClass: Optionally, pass the class of a widget to
+        instantiate.
         @param args: Arguments to widget initializer.
         """
         TestCase.setUp(self)
@@ -74,7 +75,8 @@ class GuiTestCase(TestCase):
             
         assert type(self._app) is self.__class__.QApplicationClass
         self._app.processEvents()
-        self._widget = widgetClass(*args)
+        if widgetClass is not None:
+            self._widget = widgetClass(*args)
         self.__qtConns = []
         self._widgetController = WidgetController(self._app)
 
