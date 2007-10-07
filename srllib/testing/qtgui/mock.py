@@ -20,6 +20,9 @@ class QMock(QObject, Mock):
         cls.__connections.clear()
         
     def emit(self, signal, *args):
-        for slot in self.__connections.get((self, signal), []):
+        slots = self.__connections.get((self, signal), [])
+        if not slots:
+            print "No connections for %s" % signal
+        for slot in slots:
             slot(*args)
             
