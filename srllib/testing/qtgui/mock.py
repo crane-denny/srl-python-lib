@@ -20,8 +20,6 @@ class QMock(QObject, Mock):
         cls.__connections.clear()
         
     def emit(self, signal, *args):
-        print "Emitting", self.__connections
         for slot in self.__connections.get((self, signal), []):
-            print "Calling slot %r" % slot
             slot(*args)
             
