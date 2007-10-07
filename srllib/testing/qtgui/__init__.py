@@ -21,6 +21,8 @@ from PyQt4.QtCore import *
 
 from srllib.testing import *
 from srllib.testing.qtgui.mock import QMock
+import srllib.qtgui
+from srllib import util
 
 class WidgetController(object):
     def __init__(self, app):
@@ -38,6 +40,8 @@ class WidgetController(object):
         self.__app.processEvents()
             
 class QtTestCase(TestCase):
+    """ Baseclass for tests involving Qt, but not necessarily GUI stuff.
+    """
     def setUp(self):
         TestCase.setUp(self)
         self._set_attr(QObject, "connect", self.__connect)
