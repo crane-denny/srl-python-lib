@@ -182,7 +182,7 @@ class Mock(object):
     def mockGetAllInstances(cls):
         """ Get all instances of this mock class.
         """
-        return cls.mockInstances[cls]
+        return cls.mockInstances.get(cls, [])
     
     def mockClearCalls(self):
         """ Clear all calls registered so far. """
