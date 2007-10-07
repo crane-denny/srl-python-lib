@@ -9,6 +9,9 @@ __unittest = True
 
 class TestCase(unittest.TestCase):
     """ Extended TestCase baseclass.
+    
+    @note: In the setUp method, the original working directory is registered
+    so it can be restored in tearDown. 
     @ivar _orig_attrs: Dictionary of object attributes to reset on teardown.
     @ivar _tempfiles: List of temporary files to delete on teardown.
     @ivar _tempdirs: List of temporary directories to delete on teardown.
@@ -19,10 +22,17 @@ class TestCase(unittest.TestCase):
     def setUp(self):
         # from conduit import mythreading
         # mythreading.registerExceptionHandler(self._exception_handler)
-        self.__connections, self._orig_attrs, self._tempfiles, \
-                self._tempdirs = [], {}, [], []
+        (self.__connections, self._orig_attrs, self._tempfiles,
+            self._tempdirs) = [], {}, [], []
+                
+        # Register the original working directory so this can be restored
+        # at the end of the test.
+        self.__cwd = os.getcwd()
 
     def tearDown(self):
+        if self.__cwd is not None:
+            os.chdir(self.__cwd)
+            
         for k, v in self._orig_attrs.items():
             obj, attr = k
             val = v
