@@ -7,9 +7,9 @@ class QMock(QObject, Mock):
     """
     __connections = {}
     
-    def __init__(self):
+    def __init__(self, *args, **kwds):
         QObject.__init__(self)
-        Mock.__init__(self)
+        Mock.__init__(self, *args, **kwds)
         
     @classmethod
     def connect(cls, sender, signal, slot):
@@ -21,8 +21,6 @@ class QMock(QObject, Mock):
         
     def emit(self, signal, *args):
         slots = self.__connections.get((self, signal), [])
-        if not slots:
-            print "No connections for %s" % signal
         for slot in slots:
             slot(*args)
             
