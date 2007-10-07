@@ -20,6 +20,7 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 
 from srllib.testing import *
+from srllib.testing.qtgui.mock import QMock
 
 class WidgetController(object):
     def __init__(self, app):
@@ -35,13 +36,29 @@ class WidgetController(object):
         e = QMouseEvent(tp, pos, btn, btn, kbdMods)
         self.__app.postEvent(w, e)
         self.__app.processEvents()
+            
+class QtTestCase(TestCase):
+    def setUp(self):
+        TestCase.setUp(self)
+        self._set_attr(QObject, "connect", self.__connect)
+        
+    def tearDown(self):
+        TestCase.tearDown(self)
+        QMock.mock_clear_connections()
+        
+    @classmethod
+    def __connect(cls, sender, signal, slot):
+        if isinstance(sender, QMock):
+            QMock.connect(sender, signal, slot)
+        else:
+            QObject.connect(sender, signal, slot)
 
-class GuiTestCase(TestCase):
+class GuiTestCase(QtTestCase):
     QApplicationClass = QApplication
     q_app = None
 
     def __init__(self, *args, **kwds):
-        TestCase.__init__(self, *args, **kwds)
+        QtTestCase.__init__(self, *args, **kwds)
 
     @classmethod
     def create_application(cls):
@@ -62,7 +79,7 @@ class GuiTestCase(TestCase):
         instantiate.
         @param args: Arguments to widget initializer.
         """
-        TestCase.setUp(self)
+        QtTestCase.setUp(self)
         
         if (self.__class__.q_app is not None):
             # Reuse existing QApplication 
@@ -81,7 +98,7 @@ class GuiTestCase(TestCase):
         self._widgetController = WidgetController(self._app)
 
     def tearDown(self):
-        TestCase.tearDown(self)
+        QtTestCase.tearDown(self)
 
         self._widget.close()
         for sender, sig, slt in self.__qtConns:
