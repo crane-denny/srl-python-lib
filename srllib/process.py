@@ -22,7 +22,8 @@ class ChildError(SrlError):
             assert process_error.exc_message is not None 
             assert process_error.exc_traceback is not None
             assert process_error.exc_arguments is not None
-            self.orig_exception = process_error.exc_class(*process_error.exc_arguments)
+            self.orig_exception = process_error.exc_class(
+                *process_error.exc_arguments)
         else:
             self.orig_exception = None
         self.orig_traceback = process_error.exc_traceback
@@ -65,8 +66,8 @@ class PickleError(SrlError):
 
 class _MthdProxy(object):
     def __init__(self, mthd):
-        self.__obj, self.__cls, self.__name = mthd.im_self, mthd.im_class, \
-            mthd.im_func.func_name
+        self.__obj, self.__cls, self.__name = (mthd.im_self, mthd.im_class,
+            mthd.im_func.func_name)
 
     def __call__(self, *args, **kwds):
         name = self.__name
@@ -85,7 +86,40 @@ class ChildDied(SrlError):
         SrlError.__init__(self, "Child died unexpectedly (exit code %d)" %
                           exitcode)
         self.exitcode, self.stderrr = exitcode, stderr
-            
+        
+def terminate(process):
+    """ Terminate a process of either the L{Process} type or the standard
+    subprocess.Popen type.
+    
+    This method will block until it is determined that the process has in fact
+    terminated.
+    @return: The process's exit status.
+    """
+    r = process.poll()
+    if r is not None:
+        return r
+    if get_os_name() == Os_Windows:
+        import win32process, win32api
+        # Emulate POSIX behaviour, where the exit code will be the negative
+        # value of the signal that terminated the process
+        # Open with rights to terminate and synchronize
+        handle = win32api.OpenProcess(0x1 | 0x100000, False, process.pid)
+        win32process.TerminateProcess(handle, -signal.SIGTERM)
+    else:
+        try:
+            os.kill(process.pid, signal.SIGTERM)
+            time.sleep(.05)
+        except OSError, err:
+            if err.errno == errno.ECHILD:
+                # Presumably, the child is dead already?
+                pass
+            else:
+                raise
+        if process.poll() is None:
+            os.kill(process.pid, signal.SIGKILL)
+
+    return process.wait()
+    
 class Process(object):
     """ Invoke a callable in a child process.
 
@@ -156,11 +190,6 @@ except Exception, err:
             raise
 
         self._pid = prcs.pid
-        if get_os_name() == Os_Windows:
-            import win32api
-            # Open with rights to terminate and synchronize
-            self.__prcs_handle = win32api.OpenProcess(0x1 | 0x100000, False,
-                                    self.pid)
 
     def __str__(self):
         return self.name
@@ -219,39 +248,16 @@ except Exception, err:
     def terminate(self):
         """ Kill child process.
         
-        This method will block until it is determined that the child has in fact
-        terminated.
-        @return: The child's exit status.
+        Implemented using L{terminate}.
         """
-        r = self.poll()
-        if r is not None:
-            return r
-        if get_os_name() == Os_Windows:
-            import win32process
-            # Emulate POSIX behaviour, where the exit code will be the negative
-            # value of the signal that terminated the process
-            win32process.TerminateProcess(self.__prcs_handle, -signal.SIGTERM)
-        else:
-            try:
-                os.kill(self.pid, signal.SIGTERM)
-                time.sleep(.05)
-            except OSError, err:
-                if err.errno == errno.ECHILD:
-                    # Presumably, the child is dead already?
-                    pass
-                else:
-                    raise
-            if self.poll() is None:
-                os.kill(self.pid, signal.SIGKILL)
-
-        return self.wait()
+        return terminate(self)
 
     def write_message(self, message, wait=True):
         """ Write message to other process.
         
-        If this is the child process, message will be available for parent process and vice versa.
-        This method may wait for the other process to "pick up the phone". A broken connection will
-        result in EofError.
+        If this is the child process, message will be available for parent
+        process and vice versa. This method may wait for the other process to
+        "pick up the phone". A broken connection will result in EofError.
         @param message: An arbitrary object.
         @param wait: Wait for acknowledgement.
         """
@@ -338,8 +344,8 @@ class ThreadedProcessMonitor(object):
     @ivar sig_stderr: Triggered to deliver stderr output from the child process-
     @ivar sig_finished: Signal that monitor has finished, from background thread.
     Parameters: None.
-    @ivar sig_failed: Signal that monitored process failed, from background thread.
-    Paramaters: The caught exception.
+    @ivar sig_failed: Signal that monitored process failed, from background
+    thread. Paramaters: The caught exception.
     """
     def __init__(self, daemon=False, use_pty=False, pass_process=True):
         """
@@ -348,11 +354,12 @@ class ThreadedProcessMonitor(object):
         @param pass_process: When executing functions in child processes,
         should the L{Process} object be passed as a parameter?
         """
-        self.sig_stdout, self.sig_stderr, self.sig_finished, self.sig_failed = \
-                Signal(), Signal(), Signal(), Signal()
+        self.sig_stdout, self.sig_stderr, self.sig_finished, self.sig_failed = (
+                Signal(), Signal(), Signal(), Signal())
         self.__process = None
         i, o = os.pipe()
-        self._event_pipe_in, self._event_pipe_out = os.fdopen(i, "r", 0), os.fdopen(o, "w", 0)
+        self._event_pipe_in, self._event_pipe_out = (os.fdopen(i, "r", 0),
+            os.fdopen(o, "w", 0))
         self._daemon = daemon
         self._thrd = None
 
@@ -371,8 +378,10 @@ class ThreadedProcessMonitor(object):
         if self.__process is not None:
             raise BusyError("Another process is already being monitored")
         self.__exit_code = None
-        self.__process = Process(child_func, child_args=child_args, child_kwds=child_kwds)
-        thrd = self._thrd = threading.Thread(target=self._thrdfunc, daemon=self._daemon)
+        self.__process = Process(child_func, child_args=child_args, child_kwds=
+            child_kwds)
+        thrd = self._thrd = threading.Thread(target=self._thrdfunc, daemon=
+            self._daemon)
         thrd.start()
         
     def monitor_command(self, arguments, cwd=None, env=None):
@@ -381,7 +390,8 @@ class ThreadedProcessMonitor(object):
         self.__process = subprocess.Popen(arguments, cwd=cwd, env=env,
                                           stdout=subprocess.PIPE, stderr=
                                           subprocess.PIPE)
-        thrd = self._thrd = threading.Thread(target=self._thrdfunc, daemon=self._daemon)
+        thrd = self._thrd = threading.Thread(target=self._thrdfunc, daemon=
+            self._daemon)
         thrd.start()
 
     def wait(self):
@@ -413,7 +423,8 @@ class ThreadedProcessMonitor(object):
         stdout, stderr = process.stdout, process.stderr
         pollIn, pollOut, pollEx = [stdout, stderr, self._event_pipe_in], [], []
         while pollIn:
-            # Keep in mind that closed files will be seen as ready by select and cause it to wake up
+            # Keep in mind that closed files will be seen as ready by select and
+            # cause it to wake up
             rd, wr, ex = select.select(pollIn, pollOut, pollEx, 0.01)
 
             if stdout in rd:
