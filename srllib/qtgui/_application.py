@@ -155,6 +155,12 @@ application log.")
         toCall, args, kwds = self.__call_queue.pop(0)
         toCall(*args, **kwds)
         
+_the_app = None
+        
 def get_app():
     """ Get the current L{Application} instance. """
+    global _the_app
+    if _the_app is not None:
+        # Allow overriding of application, useful for tests
+        return _the_app
     return Application.the_app
