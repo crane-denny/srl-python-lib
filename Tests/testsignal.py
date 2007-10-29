@@ -52,6 +52,18 @@ class SignalTest(TestCase):
         self.assertNot(self.__emitted)
         # This shouldn't be an error
         Signal.disconnect_all_signals(self)
+        
+    def test_is_connected_yes(self):
+        def slot():
+            pass
+        sig = self.__getSignal(slot)
+        self.assert_(sig.is_connected(slot))
+        
+    def test_is_connected_no(self):
+        def slot():
+            pass
+        sig = self.__getSignal()
+        self.assertNot(sig.is_connected(slot))
 
     ''' Can't seem to make this work (force gc)
     def testDeadSlot(self):
