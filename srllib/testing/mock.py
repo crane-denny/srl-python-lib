@@ -114,8 +114,9 @@ class Mock(object):
             # Verify interface versus mocked class
             assert inspect.isclass(realClass)
             assert not issubclass(realClass, (MockCallable, Mock)), realClass
+            # We treat all callable class members as methods
             self.__realClassMethods = srllib.inspect.get_members(realClass,
-                    inspect.isroutine)
+                    callable)
             
             # Verify that mocked methods exist in real class
             for retMethod in self.mockReturnValues.keys():

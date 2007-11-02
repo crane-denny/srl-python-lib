@@ -9,6 +9,8 @@ def _getattr_recursive(obj, attr):
 
 def get_members(obj, predicate=None):
     """ Replacement for inspect.getmembers.
+    @param predicate: If specified, a function which takes a class attribute and
+    indicates (True/False) whether or not it should be included.
     @return: Dictionary of members.
     """
     mems = {}
