@@ -178,7 +178,7 @@ class Mock(object):
         
         if (self.__realClass is not None and name not in self.__realClassMethods
             or name in self.__dontMock):
-            raise AttributeError(name)
+            raise AttributeError("%s: name" % self.__class__.__name__)
             
         # Keep a cache of methods for this object, so that references to the
         # mock's "methods" don't go out of scope
