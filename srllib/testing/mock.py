@@ -77,7 +77,7 @@ class Mock(object):
     _MockRealClass = None
 
     def __init__(self, returnValues=None, properties=None, realClass=None,
-            name=None):
+            name=None, dontMock=[]):
         """ Constructor.
         
         Methods that are not in the returnValues dictionary will return None.
@@ -92,6 +92,7 @@ class Mock(object):
         @param properties: Define return values for mocked properties.
         @param realClass: Specify the mocked class.
         @param name: Optionally specify mock's name.
+        @param dontMock: Optionally a specify a set of methods to not mock.
         @raise MockInterfaceError: An inconsistency was detected in the
         mock's interface.
         """
@@ -107,6 +108,7 @@ class Mock(object):
         self.__realClassMethods = self.__realClassProperties = {}
         self.__name = name
         self.__methods = {}    # Keep a cache of methods
+        self.__dontMock = dontMock
         if realClass is None:
             realClass = self._MockRealClass
         self.__realClass = realClass
@@ -159,12 +161,22 @@ class Mock(object):
         return object.__str__(self)
  
     def __getattr__(self, name):
+        """ Override in order to mock class methods.
+        
+        This is called as the last resort, before an AttributeError would
+        otherwise be raised.
+        """
         props = self.__dict__["_Mock__realClassProperties"]
         try: return props[name]
         except KeyError: pass
         if name.startswith("mock"):
             # Don't mock mock methods!
             raise AttributeError(name)
+        
+        if (self.__realClass is not None and name not in self.__realClassMethods
+            or name in self.__dontMock):
+            raise AttributeError(name)
+            
         # Keep a cache of methods for this object, so that references to the
         # mock's "methods" don't go out of scope
         return self.__methods.setdefault(name, MockCallable(name, self))
@@ -293,19 +305,22 @@ be to %s, but it was to %s instead" % (index, name, call.name,))
             self.mockCheckNamedCall(tester, methodName, i, *args, **kwds)
      
     def __setupSubclassMethodInterceptors(self):
-        methods = srllib.inspect.get_members(self.__class__, inspect.isroutine)
+        """ Install MockCallables for subclass methods.
+        """
+        methods = srllib.inspect.get_members(self.__class__, callable)
         baseMethods = srllib.inspect.get_members(Mock, inspect.ismethod)
         for name in methods:
-            # Don't record calls to methods of Mock base class or methods
-            # that start with 'mock'.
-            if name not in baseMethods and not name.startswith("mock"):
+            # Filter methods of Mock base class and methods that start with
+            # "mock"
+            if (name not in baseMethods and not name.startswith("mock")
+                and name not in self.__dontMock):
                 self.__dict__[name] = MockCallable(name, self, handcrafted=True)
 
     def _mockCheckInterfaceCall(self, name, callParams, callKwParams):
-        """
-        Check that a call to a method of the given name to the original
-        class with the given parameters would not fail. If it would fail,
-        raise a MockInterfaceError.
+        """ Check that a call to a method of the given name to the original
+        class with the given parameters would not fail.
+        
+        If it would fail, raise a MockInterfaceError.
         Based on the Python 2.3.3 Reference Manual section 5.3.4: Calls.
         """
         if self.__realClass is None:
@@ -341,6 +356,10 @@ found in the original class (%s)" % (name, self.__realClass.__name__))
             raise MockInterfaceError("Original %s() takes at least %s \
 arguments (%s given)" % (name, lenArgsNoDefaults, numPosSeen))
         
+try: import zope.interface
+except ImportError: pass
+else:
+    from srllib.testing._ifacemock import InterfaceMock
 
 def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
     """
