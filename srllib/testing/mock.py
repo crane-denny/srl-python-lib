@@ -114,8 +114,10 @@ class Mock(object):
         self.__realClass = realClass
         if realClass is not None:
             # Verify interface versus mocked class
-            assert inspect.isclass(realClass)
-            assert not issubclass(realClass, (MockCallable, Mock)), realClass
+            if not inspect.isclass(realClass):
+                raise TypeError(realClass)
+            if issubclass(realClass, (MockCallable, Mock)):
+                raise TypeError(realClass)
             # We treat all callable class members as methods
             self.__realClassMethods = srllib.inspect.get_members(realClass,
                     callable)
@@ -169,7 +171,8 @@ class Mock(object):
         props = self.__dict__["_Mock__realClassProperties"]
         try: return props[name]
         except KeyError: pass
-        if name.startswith("mock"):
+        name_lower = name.lower()
+        if name_lower.startswith("mock") or name_lower.startswith("_mock"):
             # Don't mock mock methods!
             raise AttributeError(name)
         
@@ -307,7 +310,7 @@ be to %s, but it was to %s instead" % (index, name, call.name,))
     def __setupSubclassMethodInterceptors(self):
         """ Install MockCallables for subclass methods.
         """
-        methods = srllib.inspect.get_members(self.__class__, callable)
+        methods = srllib.inspect.get_members(self.__class__, inspect.isroutine)
         baseMethods = srllib.inspect.get_members(Mock, inspect.ismethod)
         for name in methods:
             # Filter methods of Mock base class and methods that start with
