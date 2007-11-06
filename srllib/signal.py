@@ -116,7 +116,8 @@ class Signal(object):
     def disconnect_all_signals(cls, obj):
         """ Disconnect all signals from an object and its methods.
         
-        @note: If no connections are found for this object, no exception is raised.
+        @note: If no connections are found for this object, no exception is
+        raised.
         """
         for sig in cls.__all_signals:
             if sig.is_connected(obj):
