@@ -363,6 +363,22 @@ try: import zope.interface
 except ImportError: pass
 else:
     from srllib.testing._ifacemock import InterfaceMock
+    
+class MockFactory(object):
+    """ Utility class intended to act as a fake constructor for mocks.
+    
+    Specified constructor arguments/keywords are used to actually construct the
+    mock object, while the arguments/keywords received with the construction
+    request are stored in the mock object in the attributes
+    "mockConstructorArgs" and "mockConstructorKwds", respectively.
+    """
+    def __init__(self, cls, mockArgs=(), mockKwds={}):
+        self.__cls, self.__args, self.__kwds = cls, mockArgs, mockKwds
+        
+    def __call__(self, *args, **kwds):
+        obj = self.__cls(*self.__args, **self.__kwds)
+        obj.mockConstructorArgs, obj.mockConstructorKwds = (args, kwds)
+        return obj
 
 def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
     """
