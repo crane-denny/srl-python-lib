@@ -312,10 +312,13 @@ be to %s, but it was to %s instead" % (index, name, call.name,))
         """
         methods = srllib.inspect.get_members(self.__class__, inspect.isroutine)
         baseMethods = srllib.inspect.get_members(Mock, inspect.ismethod)
+        # The other half of this pattern should match private methods, based on
+        # the naming convention _<class name>__<method name>
+        reIgnore = re.compile(r"(?:mock|_[^_]+__).+")
         for name in methods:
-            # Filter methods of Mock base class and methods that start with
-            # "mock"
-            if (name not in baseMethods and not name.startswith("mock")
+            # Filter methods of Mock base class, private methods and methods
+            # that start with "mock"
+            if (name not in baseMethods and not reIgnore.match(name)
                 and name not in self.__dontMock):
                 self.__dict__[name] = MockCallable(name, self, handcrafted=True)
 
