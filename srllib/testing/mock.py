@@ -505,7 +505,7 @@ class MockCallable:
         if self.__exc is not None:
             raise self.__exc
         
-        if self.handcrafted:
+        if self.handcrafted and self.name not in self.mock.mockReturnValues:
             allPosParams = (self.mock,) + params
             func = _findFunc(self.mock.__class__, self.name)
             if not func:
