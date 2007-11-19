@@ -104,6 +104,7 @@ class Mock(object):
         self.mockCalledMethods = {}
         self.mockAllCalledMethods = []
         self.mockReturnValues = returnValues
+        self.mockReturnValuesArgs = {}
         self.mockExpectations = {}
         self.__realClassMethods = self.__realClassProperties = {}
         self.__name = name
@@ -206,8 +207,20 @@ class Mock(object):
         self.mockCalledMethods.clear()
         
     def mockSetReturnValue(self, name, value):
-        """ Set a return value for a method """
+        """ Set a return value for a method.
+        """
         self.mockReturnValues[name] = value
+            
+    def mockSetReturnValueWithArgs(self, name, value, args=(), kwds={}):
+        """ Set a return value for a method with certain arguments.
+        """
+        try: retVals = self.mockReturnValuesArgs[name]
+        except KeyError: retVals = self.mockReturnValuesArgs[name] = []
+        # Eliminiate eventual stale entry
+        for i, (a, k, v) in enumerate(retVals[:]):
+            if (a, k) == (args, kwds):
+                del retVals[i]
+        retVals.append((args, kwds, value))  
     
     def mockAddReturnValues(self, **methodReturnValues ):
         self.mockReturnValues.update(methodReturnValues)
@@ -512,7 +525,15 @@ class MockCallable:
                 raise NotImplementedError
             return func(*allPosParams, **kwparams)
         else:
-            returnVal = self.mock.mockReturnValues.get(self.name)
+            # First see if there is a match for these specific call
+            # parameters.
+            for args, kwds, returnVal in self.mock.mockReturnValuesArgs.get(
+                self.name, []):
+                if args == params and kwds == kwparams:
+                    break
+            else:
+                # Go for the generic match
+                returnVal = self.mock.mockReturnValues.get(self.name)
             if isinstance(returnVal, ReturnValuesBase):
                 returnVal = returnVal.next()
             return returnVal
