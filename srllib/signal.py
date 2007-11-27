@@ -138,6 +138,7 @@ class Signal(object):
     def set_enabled(self, enabled):
         self.__enabled = enabled
         
+    @property
     def is_enabled(self):
         return self.__enabled
 

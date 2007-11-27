@@ -29,13 +29,13 @@ class SignalTest(TestCase):
     def testEnabling(self):
         """ Test enabling/disabling signal. """
         sig = self.__getSignal()
-        self.assert_(sig.is_enabled())
+        self.assert_(sig.is_enabled)
         sig.disable()
-        self.assertNot(sig.is_enabled())
+        self.assertNot(sig.is_enabled)
         sig()
         self.assertNot(self.__emitted)
         sig.enable()
-        self.assert_(sig.is_enabled())
+        self.assert_(sig.is_enabled)
         sig()
         self.assert_(self.__emitted)
 
