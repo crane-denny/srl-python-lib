@@ -137,6 +137,9 @@ class Signal(object):
 
     def set_enabled(self, enabled):
         self.__enabled = enabled
+        
+    def is_enabled(self):
+        return self.__enabled
 
     def is_connected(self, obj):
         """ Is an object connected to this signal. """
