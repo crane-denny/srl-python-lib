@@ -209,6 +209,15 @@ class TestCase(unittest.TestCase):
     def _get_privattr(self, obj, name):
         """ Get a private (name mangled) attribute of an object. """
         return getattr(obj, "_%s%s" % (obj.__class__.__name__, name))
+    
+    def _set_privattr(self, obj, name, val, assert_exists=True):
+        """ Set a private (name mangled) attribute of an object.
+        @param assert_exists: Assert that the attribute already exists?
+        """
+        mangled_name = "_%s%s" % (obj.__class__.__name__, name)
+        if assert_exists:
+            getattr(obj, mangled_name)
+        setattr(obj, mangled_name, val)
 
 class TestPersistent(TestCase):
     pass
