@@ -1,12 +1,25 @@
 import srllib.qtgui
 from PyQt4.QtCore import QObject, SIGNAL
+import functools
 
 def deferred_slot(func, optimize=False):
+    """ Decorator for turning a method into a deferred slot.
+
+    When calling a deferred slot, it is queued with the QApplication (must be
+    a L{srllib.qtgui.Application} instance). Queued calls are dispatched
+    periodically, which saves CPU time as opposed to making GUI calls directly
+    as signals are received.
+    """
+    @functools.wraps(func)
     def schedule(*args, **kwds):
         srllib.qtgui.get_app().queue_deferred(func, args, kwds, optimize)
     return schedule
 
 def deferred_slot_optimize(func):
+    """ Optimized version of L{deferred_slot}.
+
+    Optimization happens by only queueing one call to a slot at a time.
+    """
     return deferred_slot(func, optimize=True)
 
 class StatefulConnection(QObject):

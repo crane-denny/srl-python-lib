@@ -8,7 +8,9 @@ import stat, shutil, os.path, imp, platform, fnmatch, sys, errno, \
         codecs
 try: import hashlib
 except ImportError: import sha
-from error import *
+import functools
+
+from srllib.error import *
 
 class PermissionsError(SrlError):
     """ Filesystem permissions error.
@@ -21,17 +23,6 @@ class PermissionsError(SrlError):
 def no_op(*args, **kwds):
     """ Utility no-op function that accepts any arguments/keywords. """
     pass
-
-def _make_decorator(func):
-    """ Wrap a test decorator to replicate metadata of the decorated function.
-    """
-    def decorate(decorated):
-        decorated.name = func.__name__
-        decorated.__dict__ = func.__dict__
-        decorated.__doc__ = func.__doc__
-        decorated.__module__ = func.__module__
-        return decorated
-    return decorate
 
 Checksum_Hex, Checksum_Binary = 0, 1
 
@@ -164,7 +155,8 @@ def replace_root(path, new_root, orig_root=None):
     return os.path.join(new_root, relPath)
 
 def _raise_permissions(func):
-    """ Raise PermissionsError upon filesystem access error. """
+    """ Decorator for raising PermissionsError upon filesystem access error. """
+    @functools.wraps(func)
     def wrapper(*args, **kwds):
         try: return func(*args, **kwds)
         except EnvironmentError, err:
