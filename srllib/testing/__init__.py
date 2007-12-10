@@ -214,7 +214,12 @@ class TestCase(unittest.TestCase):
         """ Set a private (name mangled) attribute of an object.
         @param assert_exists: Assert that the attribute already exists?
         """
-        mangled_name = "_%s%s" % (obj.__class__.__name__, name)
+        if not isinstance(obj.__class__, type):
+            cls = obj.__class__
+        else:
+            cls = obj
+        prefix = "_" if not cls.__name__.startswith("_") else ""
+        mangled_name = "%s%s%s" % (prefix, cls.__name__, name)
         if assert_exists:
             getattr(obj, mangled_name)
         setattr(obj, mangled_name, val)
