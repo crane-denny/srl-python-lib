@@ -230,11 +230,16 @@ class Mock(object):
         self.mockExpectations.setdefault(name, []).append((testFn, after,
                 until))
         
-    def mockSetRaises(self, name, exc):
-        """ Set an exception to be raised by a method. """
+    def mockSetRaises(self, name, exc, until=None, after=None):
+        """ Set an exception to be raised by a method.
+        @param until: Optionally specify a call index until which the
+        exception will be raised.
+        @param after: Optionally specify a call index after which the exception
+        will be raised. 
+        """
         mock_callable = getattr(self, name)
         assert isinstance(mock_callable, MockCallable)
-        mock_callable.mockSetRaises(exc)
+        mock_callable.mockSetRaises(exc, until=until, after=after)
         
     def mockGetCall(self, idx):
         """ Get a certain L{call<MockCall>} that was made. """
@@ -499,9 +504,9 @@ class MockCallable:
         self.checkExpectations(thisCall, params, kwparams)
         return self.makeCall(params, kwparams)
     
-    def mockSetRaises(self, exc):
+    def mockSetRaises(self, exc, after=None, until=None):
         """ Set an exception that should be raised when called. """
-        self.__exc = exc
+        self.__exc = (exc, after, until)
 
     def recordCall(self, params, kwparams):
         """
@@ -516,7 +521,11 @@ class MockCallable:
 
     def makeCall(self, params, kwparams):
         if self.__exc is not None:
-            raise self.__exc
+            exc, after, until = self.__exc
+            callsMade = len(self.mock.mockCalledMethods.get(self.name, []))
+            if (after is None or callsMade > after) and (until is None or
+                callsMade < until):
+                raise exc
         
         if self.handcrafted and self.name not in self.mock.mockReturnValues:
             allPosParams = (self.mock,) + params
