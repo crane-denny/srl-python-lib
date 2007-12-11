@@ -239,7 +239,7 @@ class Mock(object):
         """
         mock_callable = getattr(self, name)
         assert isinstance(mock_callable, MockCallable)
-        mock_callable.mockSetRaises(exc, until=until, after=after)
+        mock_callable.setRaises(exc, until=until, after=after)
         
     def mockGetCall(self, idx):
         """ Get a certain L{call<MockCall>} that was made. """
@@ -504,7 +504,7 @@ class MockCallable:
         self.checkExpectations(thisCall, params, kwparams)
         return self.makeCall(params, kwparams)
     
-    def mockSetRaises(self, exc, after=None, until=None):
+    def setRaises(self, exc, after=None, until=None):
         """ Set an exception that should be raised when called. """
         self.__exc = (exc, after, until)
 
@@ -522,9 +522,10 @@ class MockCallable:
     def makeCall(self, params, kwparams):
         if self.__exc is not None:
             exc, after, until = self.__exc
-            callsMade = len(self.mock.mockCalledMethods.get(self.name, []))
-            if (after is None or callsMade > after) and (until is None or
-                callsMade < until):
+            # The call is recorded before it is made
+            idx = len(self.mock.mockCalledMethods.get(self.name, [])) - 1
+            if (after is None or idx > after) and (until is None or
+                idx < until):
                 raise exc
         
         if self.handcrafted and self.name not in self.mock.mockReturnValues:
