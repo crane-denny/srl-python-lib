@@ -216,7 +216,6 @@ class TestCase(unittest.TestCase):
         """
         if not isinstance(obj, type):
             cls = obj.__class__
-            print "cls: %r" % (cls,)
         else:
             cls = obj
         prefix = "_" if not cls.__name__.startswith("_") else ""
