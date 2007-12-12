@@ -214,8 +214,9 @@ class TestCase(unittest.TestCase):
         """ Set a private (name mangled) attribute of an object.
         @param assert_exists: Assert that the attribute already exists?
         """
-        if not isinstance(obj.__class__, type):
+        if not isinstance(obj, type):
             cls = obj.__class__
+            print "cls: %r" % (cls,)
         else:
             cls = obj
         prefix = "_" if not cls.__name__.startswith("_") else ""
