@@ -244,6 +244,10 @@ class Mock(object):
     def mockGetCall(self, idx):
         """ Get a certain L{call<MockCall>} that was made. """
         return self.mockAllCalledMethods[idx]
+    
+    def mockGetNamedCall(self, name, idx):
+        """ Get a L{call<MockCall>} to a certain method that was made. """
+        return self.mockGetNamedCalls(name)[idx]
 
     def mockGetAllCalls(self):
         """ Get all calls.
