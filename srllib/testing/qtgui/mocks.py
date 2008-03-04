@@ -1,10 +1,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from igmtesting.mock import Mock
-
-import IGMGUI._visualize as guivisualize
-import IGMGUI._workflow as guiworkflow
+from srllib.testing.mock import Mock
 
 class QMock(QObject, Mock):
     def __init__(self, parent=None, *args, **kwds):
@@ -150,28 +147,9 @@ class QLabelMock(QWidgetMock):
     def setText(self, text):
         self.__text = text
 
-class GraphicsSceneMock(Mock):
-    _MockRealClass = guivisualize._GraphicsScene
-
-    def __init__(self):
-        Mock.__init__(self)
-        self.__class__.mock_instance = self
-        self.model2gui = {}
-        self.viewmode = guivisualize.ViewMode_Workflow
-        self.is_editable = True
-
-class GraphicsViewMock(QMock):
-    _MockRealClass = guivisualize.GraphicsView
-
 class _ItemMockBase(Mock):
     def __init__(self, model):
         self.model = model
-
-class PortItemMock(_ItemMockBase):
-    _MockRealClass = guiworkflow._Port
-
-    def __init__(self, model, parent, scene):
-        _ItemMockBase.__init__(self, model)
 
 class QPixmapMock(QMock):
     _MockRealClass = QPixmap
