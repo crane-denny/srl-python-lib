@@ -231,7 +231,11 @@ class QGroupBoxMock(QMock):
     def isChecked(self):
         return self.__checkable and self.__checked
 
-class QPushButtonMock(QWidgetMock):
+class _ButtonMockBase(QWidgetMock):
+    def click(self):
+        self.emit(SIGNAL("clicked()"))
+
+class QPushButtonMock(_ButtonMockBase):
     _MockRealClass = QPushButton
 
 class QRadioButtonMock(QMock):
