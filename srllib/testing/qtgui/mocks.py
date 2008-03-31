@@ -279,3 +279,22 @@ class QListWidgetMock(QWidgetMock):
 
     def count(self):
         return len(self.__items)
+
+class QTableWidgetMock(QWidgetMock):
+    _MockRealClass = QTableWidget
+
+    def __init__(self):
+        self.__row_count = 0
+        self.__items = {}
+
+    def rowCount(self):
+        return self.__row_count
+
+    def setRowCount(self, count):
+        self.__row_count = count
+
+    def item(self, row, col):
+        return self.__items[(row, col)]
+
+    def setItem(self, row, col, item):
+        self.__items[(row, col)] = item
