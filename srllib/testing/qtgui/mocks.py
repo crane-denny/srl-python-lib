@@ -284,8 +284,10 @@ class QTableWidgetMock(QWidgetMock):
     _MockRealClass = QTableWidget
 
     def __init__(self):
-        self.__row_count = 0
-        self.__items = {}
+        QWidgetMock.__init__(self)
+        self.__row_count = self.__col_count = 0
+        self.mock_items = []
+        self.mock_cell_widgets = []
 
     def rowCount(self):
         return self.__row_count
@@ -293,8 +295,29 @@ class QTableWidgetMock(QWidgetMock):
     def setRowCount(self, count):
         self.__row_count = count
 
+    def setColumnCount(self, count):
+        self.__col_count = count
+
+    def columnCount(self):
+        return self.__col_count
+
     def item(self, row, col):
-        return self.__items[(row, col)]
+        return self.mock_items[row][col]
 
     def setItem(self, row, col, item):
-        self.__items[(row, col)] = item
+        items = self.mock_items
+        while row >= len(items):
+            items.append({})
+        items[row][col] = item
+
+    def cellWidget(self, row, col):
+        return self.mock_items[row][col]
+
+    def setCellWidget(self, row, col, widget):
+        self.setItem(row, col, widget)
+
+class QTableWidgetItemMock(QMock):
+    _MockRealClass = QTableWidgetItem
+
+class QIconMock(QMock):
+    _MockRealClass = QIcon
