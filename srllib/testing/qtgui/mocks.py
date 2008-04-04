@@ -327,3 +327,9 @@ class QTableWidgetItemMock(QMock):
 
 class QIconMock(QMock):
     _MockRealClass = QIcon
+
+class QFileMock(QMock):
+    _MockRealClass = QFile
+
+class QTextStreamMock(QMock):
+    _MockRealClass = QTextStream
