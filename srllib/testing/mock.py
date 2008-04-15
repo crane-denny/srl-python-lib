@@ -398,6 +398,9 @@ class MockFactory(object):
     mock object, while the arguments/keywords received with the construction
     request are stored in the mock object in the attributes
     "mockConstructorArgs" and "mockConstructorKwds", respectively.
+
+    If the object has a method "mockInit", that will be called after
+    construction with the factory arguments/keywords.
     """
     def __init__(self, cls, mockArgs=(), mockKwds={}):
         self.__cls, self.__args, self.__kwds = cls, mockArgs, mockKwds
@@ -405,6 +408,8 @@ class MockFactory(object):
     def __call__(self, *args, **kwds):
         obj = self.__cls(*self.__args, **self.__kwds)
         obj.mockConstructorArgs, obj.mockConstructorKwds = (args, kwds)
+        if hasattr(obj, "mockInit"):
+            obj.mockInit(*args, **kwds)
         return obj
 
 def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
