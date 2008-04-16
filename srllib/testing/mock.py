@@ -77,7 +77,7 @@ class Mock(object):
     _MockRealClass = None
 
     def __init__(self, returnValues=None, properties=None, realClass=None,
-            name=None, dontMock=[]):
+            name=None, dontMock=[], attributes=None):
         """ Constructor.
 
         Methods that are not in the returnValues dictionary will return None.
@@ -93,6 +93,7 @@ class Mock(object):
         @param realClass: Specify the mocked class.
         @param name: Optionally specify mock's name.
         @param dontMock: Optionally a specify a set of methods to not mock.
+        @param attributes: Define mocked attributes.
         @raise MockInterfaceError: An inconsistency was detected in the
         mock's interface.
         """
@@ -100,6 +101,8 @@ class Mock(object):
             returnValues = {}
         if properties is None:
             properties = {}
+        if attributes is None:
+            attributes = {}
 
         self.mockCalledMethods = {}
         self.mockAllCalledMethods = []
@@ -110,6 +113,7 @@ class Mock(object):
         self.__name = name
         self.__methods = {}    # Keep a cache of methods
         self.__dontMock = dontMock
+        self.__attributes = {}
         if realClass is None:
             realClass = self._MockRealClass
         self.__realClass = realClass
@@ -152,6 +156,10 @@ class Mock(object):
 
         self.__setupSubclassMethodInterceptors()
 
+        # Attributes
+        for k, v in attributes.items():
+            self.__attributes[k] = v
+
         # Record this instance among all mock instances
         tp = type(self)
         if not tp in Mock.mockInstances:
@@ -169,8 +177,9 @@ class Mock(object):
         This is called as the last resort, before an AttributeError would
         otherwise be raised.
         """
-        props = self.__dict__["_Mock__realClassProperties"]
-        try: return props[name]
+        try: return self.__dict__["_Mock__realClassProperties"][name]
+        except KeyError: pass
+        try: return self.__dict__["_Mock__attributes"][name]
         except KeyError: pass
         name_lower = name.lower()
         if name_lower.startswith("mock") or name_lower.startswith("_mock"):
