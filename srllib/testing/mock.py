@@ -410,8 +410,10 @@ class MockFactory(object):
 
     If the object has a method "mockInit", that will be called after
     construction with the factory arguments/keywords.
+    @ivar constructed: Constructed objects.
     """
-    def __init__(self, cls, mockArgs=(), mockKwds={}):
+    def __init__(self, cls=Mock, mockArgs=(), mockKwds={}):
+        self.constructed = []
         self.__cls, self.__args, self.__kwds = cls, mockArgs, mockKwds
 
     def __call__(self, *args, **kwds):
@@ -419,6 +421,7 @@ class MockFactory(object):
         obj.mockConstructorArgs, obj.mockConstructorKwds = (args, kwds)
         if hasattr(obj, "mockInit"):
             obj.mockInit(*args, **kwds)
+        self.constructed.append(obj)
         return obj
 
 def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
