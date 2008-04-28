@@ -268,17 +268,21 @@ class QCheckBoxMock(QMock):
         return self.__checked
 
 class QListWidgetMock(QWidgetMock):
+    """ Mock QListWidget.
+
+    @ivar mock_items: List of items.
+    """
     _MockRealClass = QListWidget
 
     def __init__(self):
         QWidgetMock.__init__(self)
-        self.__items = []
+        self.mock_items = []
 
     def addItem(self, text):
-        self.__items.append(text)
+        self.mock_items.append(text)
 
     def count(self):
-        return len(self.__items)
+        return len(self.mock_items)
 
 class QTableWidgetMock(QWidgetMock):
     _MockRealClass = QTableWidget
