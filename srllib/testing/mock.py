@@ -465,10 +465,11 @@ class MockCall:
     def checkArgs(self, tester, *args, **kwargs):
         args = tuple(args)
         assert isinstance(self.args, tuple), "%r" % (self.args,)
-        tester.assertEqual(args, self.args, "Arguments %r differ from \
-those expected: %r" % (self.args, args))
-        tester.assertEqual(kwargs, self.kwargs, "Keyword arguments (%r) \
-differ from those expected (%r)" % (self.kwargs, kwargs))
+        tester.assertEqual(args, self.args, "Callable %s: Arguments %r differ "
+            "from those expected: %r" % (self.name, self.args, args))
+        tester.assertEqual(kwargs, self.kwargs, "Callable %s: Keyword arguments "
+            "(%r) differ from those expected (%r)" % (self.name, self.kwargs,
+                kwargs))
 
     def getParam(self, n):
         if isinstance(n, int):
