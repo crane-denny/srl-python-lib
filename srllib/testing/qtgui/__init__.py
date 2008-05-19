@@ -38,24 +38,33 @@ class WidgetController(object):
         e = QMouseEvent(tp, pos, btn, btn, kbdMods)
         self.__app.postEvent(w, e)
         self.__app.processEvents()
-            
+
 class QtTestCase(TestCase):
     """ Baseclass for tests involving Qt, but not necessarily GUI stuff.
     """
+    __real_connect = QObject.connect
+
     def setUp(self):
         TestCase.setUp(self)
         self._set_attr(QObject, "connect", self.__connect)
-        
+        self._set_attr(srllib.qtgui, "connect", self.__connect)
+
     def tearDown(self):
         TestCase.tearDown(self)
         QMock.mock_clear_connections()
-        
+
+    def assertConnected(self, slot, emitter, signal):
+        """ Assert that a slot is connected to a signal. """
+        self.assert_(emitter.mock_is_connected(slot, signal), msg=
+            "Slot %r not connected to signal %s of %r" % (slot, signal,
+                emitter))
+
     @classmethod
     def __connect(cls, sender, signal, slot):
         if isinstance(sender, QMock):
             QMock.connect(sender, signal, slot)
         else:
-            QObject.connect(sender, signal, slot)
+            cls.__real_connect(sender, signal, slot)
 
 class GuiTestCase(QtTestCase):
     QApplicationClass = QApplication
@@ -69,7 +78,7 @@ class GuiTestCase(QtTestCase):
         import sys
         cls.q_app = cls.QApplicationClass(sys.argv)
         return cls.q_app
-    
+
     @classmethod
     def close_application(cls):
         if not cls.q_app.has_quit():
@@ -84,16 +93,16 @@ class GuiTestCase(QtTestCase):
         @param args: Arguments to widget initializer.
         """
         QtTestCase.setUp(self)
-        
+
         if (self.__class__.q_app is not None):
-            # Reuse existing QApplication 
-            self._app = self.__class__.q_app 
+            # Reuse existing QApplication
+            self._app = self.__class__.q_app
             self.__created_app = False
         else:
             # Set up QApplication for this test
             self._app = self.__class__.create_application()
             self.__created_app = True
-            
+
         assert type(self._app) is self.__class__.QApplicationClass
         self._app.processEvents()
         if widgetClass is not None:
@@ -116,7 +125,7 @@ class GuiTestCase(QtTestCase):
 
     def _scheduleCall(self, func, interval=0):
         """ Schedule function with Qt event loop to be called after a certain interval.
-        
+
         @param func: Function to execute.
         @param interval: Interval in seconds.
         """
