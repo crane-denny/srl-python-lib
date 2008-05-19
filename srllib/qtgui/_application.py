@@ -31,10 +31,13 @@ class Application(QApplication):
     sig_quitting = srllib.signal.Signal()
     the_app = None
 
-    def __init__(self, argv=sys.argv, catch_exceptions=True):
+    def __init__(self, argv=None, catch_exceptions=True):
         """
         @param catch_exceptions: Handle uncaught exceptions.
         """
+        if argv is None:
+            # sys.argv needn't be defined when embedding Python
+            argv = getattr(sys, "argv", [])
         QApplication.__init__(self, argv)
 
         self.sig_exception = Signal()
@@ -43,7 +46,7 @@ class Application(QApplication):
         if catch_exceptions:
             sys.excepthook = self.__exchook
             srllib.threading.register_exceptionhandler(self.__thrdexc_hook)
-        
+
         import PyQt4.QtGui
         PyQt4.QtGui.qApp = self
         Application.the_app = self
@@ -78,7 +81,7 @@ class Application(QApplication):
         cls.sig_quitting()
         QApplication.quit()
         cls.the_app.__hasQuit = True
-        
+
     @classmethod
     def has_quit(cls):
         return cls.the_app.__hasQuit
@@ -100,7 +103,7 @@ class Application(QApplication):
 
     def __slot_timed_out(self):
         """ Periodic callback for various chores.
-        
+
         This callback is here used to dispatch background-thread signals, and
         as an opportunity for Python to process incoming OS signals (e.g.,
         SIGINT resulting from Ctrl+C).
@@ -124,7 +127,7 @@ class Application(QApplication):
             i -= 1
         for mthd, args, kwds, optimize in to_dispatch:
             mthd(*args, **kwds)
-            
+
     @_signal.deferred_slot
     def __thrdexc_hook(self, exc):
         self.__exchook(exc.exc_type, exc.exc_value, exc.exc_traceback,
@@ -138,8 +141,8 @@ class Application(QApplication):
         if not exc is KeyboardInterrupt:
             thrdSpecific = ""
             if in_thread:
-                thrdSpecific = " in thread %s" % (in_thread,) 
-                
+                thrdSpecific = " in thread %s" % (in_thread,)
+
             msg = ' '.join(traceback.format_exception(exc, value, tb))
             message_critical("Fatal Error", "An unexpected exception was encountered%s, \
 the application will have to be shut down." % (thrdSpecific,), detailedText=msg, informativeText=\
@@ -154,9 +157,9 @@ application log.")
     def __exec_call(self):
         toCall, args, kwds = self.__call_queue.pop(0)
         toCall(*args, **kwds)
-        
+
 _the_app = None
-        
+
 def get_app():
     """ Get the current L{Application} instance. """
     global _the_app
