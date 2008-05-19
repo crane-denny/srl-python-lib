@@ -32,7 +32,7 @@ class StatefulConnection(QObject):
     def __init__(self, emitter, signal, slot, extra_args=[]):
         """
         @param emitter: The signal emitter.
-        @param signal: The Qt signal (as a string).
+        @param signal: Signal signature (PyQt4.QtCore.Signal is invoked on this).
         @param slot: The slot to be invoked.
         @param extra_args: Extra arguments to pass when invoking the slot.
         """
@@ -43,3 +43,12 @@ class StatefulConnection(QObject):
     def __call__(self, *args, **kwds):
         args = args + tuple(self.__extra)
         self.__slot(*args, **kwds)
+
+def connect(emitter, signal, slot):
+    """ Simplified version of QObject.connect which takes a raw slot signature.
+
+    @param emitter: Signal emitter.
+    @param signal: Signal signature (PyQt4.QtCore.Signal is invoked on this).
+    @param slot: Signal signature (PyQt4.QtCore.Signal is invoked on this).
+    """
+    QObject.connect(emitter, SIGNAL(signal), slot)
