@@ -188,8 +188,8 @@ class QTreeWidgetItemMock(QWidgetMock):
 class QButtonGroupMock(QMock):
     _MockRealClass = QButtonGroup
 
-    def __init__(self):
-        QMock.__init__(self)
+    def __init__(self, *args, **kwds):
+        QMock.__init__(self, *args, **kwds)
         self.__btns = {}
         self.__checked = None
 
@@ -199,12 +199,21 @@ class QButtonGroupMock(QMock):
             if b.isChecked() and b is not btn:
                 b.setChecked(False)
 
-    def addButton(self, btn, id):
+    def addButton(self, btn, id=None):
+        if id is None:
+            if self.__btns:
+                id = max(self.__btns) + 1
+            else:
+                id = 0
         self.__btns[id] = btn
         btn.mock_group = self
 
     def button(self, id):
         return self.__btns[id]
+
+    def buttons(self):
+        keys = sorted(self.__btns.keys())
+        return [self.__btns[k] for k in keys]
 
     def checkedButton(self):
         return self.__checked
