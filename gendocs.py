@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """ Generate code documentation with epydoc. """
-import epydoc.cli, sys, re
+import sys
+import re
+import os.path
+import epydoc.cli
 
 args = []
 pkgs = []
@@ -12,5 +15,8 @@ for a in sys.argv[1:]:
         pkgs.append(a)
 pkgs = pkgs or ["srllib"]
 
-sys.argv = [sys.argv[0], "--html", "-o", "Docs/Epydoc"] + args + pkgs
+doc_dir = os.path.join("Docs", "Epydoc")
+if not os.path.exists(doc_dir):
+    os.makedirs(doc_dir)
+sys.argv = [sys.argv[0], "--html", "-o", doc_dir] + args + pkgs
 epydoc.cli.cli()
