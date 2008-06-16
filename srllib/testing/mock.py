@@ -412,12 +412,24 @@ class MockFactory(object):
     construction with the factory arguments/keywords.
     @ivar constructed: Constructed objects.
     """
-    def __init__(self, cls=Mock, mockArgs=(), mockKwds={}):
+    def __init__(self, cls=Mock, mockArgs=(), mockKwds={}, directArgs=False):
+        """ Constructor.
+
+        @param cls: The class to create objects of.
+        @param mockArgs: Arguments to pass to the class' constructor.
+        @param mockKwds: Keyword arguments to pass to the class' constructor.
+        @param directArgs: Use construction arguments directly when constructing
+        the object?
+        """
         self.constructed = []
-        self.__cls, self.__args, self.__kwds = cls, mockArgs, mockKwds
+        (self.__cls, self.__args, self.__kwds, self.__directArgs) = (cls,
+            mockArgs, mockKwds, directArgs)
 
     def __call__(self, *args, **kwds):
-        obj = self.__cls(*self.__args, **self.__kwds)
+        if not self.__directArgs:
+            obj = self.__cls(*self.__args, **self.__kwds)
+        else:
+            obj = self.__cls(*args, **kwds)
         obj.mockConstructorArgs, obj.mockConstructorKwds = (args, kwds)
         if hasattr(obj, "mockInit"):
             obj.mockInit(*args, **kwds)
