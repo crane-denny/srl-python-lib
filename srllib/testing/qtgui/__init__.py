@@ -41,6 +41,12 @@ class WidgetController(object):
 
 class QtTestCase(TestCase):
     """ Baseclass for tests involving Qt, but not necessarily GUI stuff.
+
+    This class replaces QObject.connect and srllib.qtgui.connect in the setup
+    phase, with an alternative implementation. The alternative implementation
+    detects whether the sender is a QMock instance; if so, it uses
+    QMock.connect, otherwise QObject.connect is employed. Using QMock.connect
+    means that we gain control of the signal connection/emission process.
     """
     __real_connect = QObject.connect
 
