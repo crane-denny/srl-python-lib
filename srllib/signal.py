@@ -65,9 +65,10 @@ your arguments; the original exception was: `%s'" %
 
 class Signal(object):
     """ A signal is a way to pass a message to interested observers.
-    
-    Observers connect methods ("slots") to the signal they're interested in, and when the
-    signal is fired the methods are called back with the correct parameters.
+
+    Observers connect methods ("slots") to the signal they're interested in, and
+    when the signal is fired the methods are called back with the correct
+    parameters.
     """
     __all_signals = set()
 
@@ -76,10 +77,10 @@ class Signal(object):
         self.__obj2slots = {}
         Signal.__all_signals.add(self)
         self.__enabled = True
-	
+
     def __call__(self, *args, **kwds):
         """ For each group in sorted order, call each slot.
-        """ 
+        """
         if not self.__enabled:
             return
 
@@ -115,7 +116,7 @@ class Signal(object):
     @classmethod
     def disconnect_all_signals(cls, obj):
         """ Disconnect all signals from an object and its methods.
-        
+
         @note: If no connections are found for this object, no exception is
         raised.
         """
@@ -137,7 +138,7 @@ class Signal(object):
 
     def set_enabled(self, enabled):
         self.__enabled = enabled
-        
+
     @property
     def is_enabled(self):
         return self.__enabled
