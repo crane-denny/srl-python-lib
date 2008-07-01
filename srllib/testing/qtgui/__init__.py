@@ -53,7 +53,7 @@ class QtTestCase(TestCase):
     def setUp(self):
         TestCase.setUp(self)
         self._set_attr(QObject, "connect", self.__connect)
-        self._set_attr(srllib.qtgui, "connect", self.__connect)
+        self._set_attr(srllib.qtgui, "connect", self.__qtgui_connect)
 
     def tearDown(self):
         TestCase.tearDown(self)
@@ -64,6 +64,10 @@ class QtTestCase(TestCase):
         self.assert_(emitter.mock_is_connected(slot, signal), msg=
             "Slot %r not connected to signal %s of %r" % (slot, signal,
                 emitter))
+
+    @classmethod
+    def __qtgui_connect(cls, sender, signal, slot):
+        cls.__connect(sender, SIGNAL(signal), slot)
 
     @classmethod
     def __connect(cls, sender, signal, slot):
