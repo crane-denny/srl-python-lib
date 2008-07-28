@@ -400,6 +400,10 @@ except ImportError: pass
 else:
     from srllib.testing._ifacemock import InterfaceMock
 
+def FunctionMock(returnValue):
+    """ Factory function for returning a mock acting as a function. """
+    return Mock(returnValues={"__call__": returnValue})
+
 class MockFactory(object):
     """ Utility class intended to act as a fake constructor for mocks.
 
@@ -767,6 +771,3 @@ def HASMETHOD(method):
     return testFn
 
 CALLABLE = callable
-
-
-
