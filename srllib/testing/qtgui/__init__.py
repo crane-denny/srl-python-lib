@@ -47,7 +47,7 @@ class QtTestCase(TestCase):
     def setUp(self):
         TestCase.setUp(self)
         self._set_attr(QObject, "connect", self.__connect)
-        self._set_attr(srllib.qtgui, "connect", self.__connect)
+        self._set_attr(srllib.qtgui, "connect", self.__srllib_connect)
 
     def tearDown(self):
         TestCase.tearDown(self)
@@ -58,6 +58,15 @@ class QtTestCase(TestCase):
         self.assert_(emitter.mock_is_connected(slot, signal), msg=
             "Slot %r not connected to signal %s of %r" % (slot, signal,
                 emitter))
+
+    @classmethod
+    def __srllib_connect(cls, sender, signal, slot):
+        """ Simulate srllib.qtgui.connect.
+
+        This function differs from standard QObject.connect by implicitly
+        transforming the signal argument with SIGNAL.
+        """
+        cls.__connect(sender, SIGNAL(signal), slot)
 
     @classmethod
     def __connect(cls, sender, signal, slot):
