@@ -1,4 +1,5 @@
-""" Collection of widget classes. """
+""" Collection of widget classes.
+"""
 from PyQt4 import QtGui, QtCore
 
 import srllib.qtgui
@@ -45,5 +46,7 @@ class LineEdit(QtGui.QLineEdit):
         if undo_stack is None:
             return
 
-        undo_stack.push(_LineEditUndo(self, self.__cur_text, text))
-        self.__cur_text = text
+        # Make sure to make a copy of the text
+        my_text = QtCore.QString(text)
+        undo_stack.push(_LineEditUndo(self, self.__cur_text, my_text))
+        self.__cur_text = my_text
