@@ -41,13 +41,19 @@ class WidgetController(object):
 
 class QtTestCase(TestCase):
     """ Baseclass for tests involving Qt, but not necessarily GUI stuff.
+
+    This class replaces QObject.connect and srllib.qtgui.connect in the setup
+    phase, with an alternative implementation. The alternative implementation
+    detects whether the sender is a QMock instance; if so, it uses
+    QMock.connect, otherwise QObject.connect is employed. Using QMock.connect
+    means that we gain control of the signal connection/emission process.
     """
     __real_connect = QObject.connect
 
     def setUp(self):
         TestCase.setUp(self)
         self._set_attr(QObject, "connect", self.__connect)
-        self._set_attr(srllib.qtgui, "connect", self.__srllib_connect)
+        self._set_attr(srllib.qtgui, "connect", self.__qtgui_connect)
 
     def tearDown(self):
         TestCase.tearDown(self)
@@ -60,7 +66,7 @@ class QtTestCase(TestCase):
                 emitter))
 
     @classmethod
-    def __srllib_connect(cls, sender, signal, slot):
+    def __qtgui_connect(cls, sender, signal, slot):
         """ Simulate srllib.qtgui.connect.
 
         This function differs from standard QObject.connect by implicitly
