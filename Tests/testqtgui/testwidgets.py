@@ -54,6 +54,13 @@ class LineEditTest(QtTestCase):
         stack.undo()
         edit.mockCheckNamedCall(self, "setText", -1, "Test")
 
+    def test_undo_setText_undoable(self):
+        """ Test undo in conjunction with setText, with undoable=True. """
+        edit, stack = self.__construct("Old", undo=True)
+        edit.setText("New", undoable=True)
+        stack.undo()
+        edit.mockCheckNamedCall(self, "setText", -1, "Old")
+
     def __construct(self, contents=QtCore.QString(), undo=False,
         undo_text=None):
         if undo:

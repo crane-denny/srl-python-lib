@@ -61,7 +61,9 @@ class LineEdit(QtGui.QLineEdit):
         self.__undo_txt = undo_text
         self.__cur_editing = None
 
-    def setText(self, text):
+    def setText(self, text, undoable=False):
+        if undoable:
+            self.__edited(text)
         self.__super.setText(self, text)
         self.__cur_text = text
 
