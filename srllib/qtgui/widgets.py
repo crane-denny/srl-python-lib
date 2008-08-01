@@ -7,11 +7,22 @@ import srllib.qtgui
 class _LineEditUndo(QtGui.QUndoCommand):
     __super = QtGui.QUndoCommand
 
-    def __init__(self, edit, prev_text, cur_text, label):
-        self.__super.__init__(self, label, None)
+    def __init__(self, edit, prev_text, cur_text, cmd_text, id_):
+        self.__super.__init__(self, cmd_text, None)
         self.__edit = edit
         self.__prev = prev_text
         self.__cur = cur_text
+        self.__id = id_
+
+    def id(self):
+        return self.__id
+
+    def mergeWith(self, other):
+        if not isinstance(other, _LineEditUndo) or other.id() != self.id():
+            return False
+
+        self.__cur = other.__cur
+        return True
 
     def undo(self):
         self.__edit.setText(self.__prev)
@@ -42,31 +53,33 @@ class LineEdit(QtGui.QLineEdit):
 
         # Always cache the text as it is before the last change, for undo
         self.__cur_text = self.text()
-        QtCore.QObject.connect(self, QtCore.SIGNAL("textEdited(const QString&"),
-            self.__edited)
-        QtCore.QObject.connect(self, QtCore.SIGNAL("editingFinished()"),
-            self.__editing_finished)
+        srllib.qtgui.connect(self, "textEdited(const QString&)", self.__edited)
+        srllib.qtgui.connect(self, "editingFinished()", self.__editing_finished)
         self.__undo_stack = undo_stack
         if undo_text is None:
             undo_text = "edit text"
         self.__undo_txt = undo_text
+        self.__cur_editing = None
 
-        self.__cur_undo = None
+    def setText(self, text):
+        self.__super.setText(self, text)
+        self.__cur_text = text
 
     def __edited(self, text):
-        print "Edited"
         undo_stack = self.__undo_stack
         if undo_stack is None:
             return
 
-        if self.__cur_undo is None:
-            # We're
-            pass
+        if self.__cur_editing != undo_stack.index()-1:
+            # We're starting a new operation
+            id_ = self.__cur_editing = undo_stack.index()
+        else:
+            id_ = self.__cur_editing
 
         # Make sure to make a copy of the text
         my_text = QtCore.QString(text)
         undo_stack.push(_LineEditUndo(self, self.__cur_text, my_text,
-            self.__undo_txt))
+            self.__undo_txt, id_))
         self.__cur_text = my_text
 
     def __editing_finished(self):
@@ -76,4 +89,4 @@ class LineEdit(QtGui.QLineEdit):
         if undo_stack is None:
             return
 
-
+        self.__cur_editing = None
