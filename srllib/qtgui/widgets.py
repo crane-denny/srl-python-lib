@@ -22,7 +22,10 @@ class _LineEditUndo(QtGui.QUndoCommand):
 class LineEdit(QtGui.QLineEdit):
     """ Extension of QLineEdit.
 
-    This class supports the Qt undo framework.
+    This class supports the Qt undo framework. An undo operation spans the
+    interval from the user starts entering text until the widget either loses
+    focus or Enter is pressed, this is considered a suitable granularity for
+    this kind of widget.
     """
     __super = QtGui.QLineEdit
 
@@ -41,19 +44,36 @@ class LineEdit(QtGui.QLineEdit):
         self.__cur_text = self.text()
         QtCore.QObject.connect(self, QtCore.SIGNAL("textEdited(const QString&"),
             self.__edited)
-        srllib.qtgui.connect(self, "textEdited(const QString&)", self.__edited)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("editingFinished()"),
+            self.__editing_finished)
         self.__undo_stack = undo_stack
         if undo_text is None:
             undo_text = "edit text"
         self.__undo_txt = undo_text
 
+        self.__cur_undo = None
+
     def __edited(self, text):
+        print "Edited"
         undo_stack = self.__undo_stack
         if undo_stack is None:
             return
+
+        if self.__cur_undo is None:
+            # We're
+            pass
 
         # Make sure to make a copy of the text
         my_text = QtCore.QString(text)
         undo_stack.push(_LineEditUndo(self, self.__cur_text, my_text,
             self.__undo_txt))
         self.__cur_text = my_text
+
+    def __editing_finished(self):
+        """ We've either lost focus or the user has pressed Enter.
+        """
+        undo_stack = self.__undo_stack
+        if undo_stack is None:
+            return
+
+

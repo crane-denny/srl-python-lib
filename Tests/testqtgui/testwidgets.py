@@ -15,20 +15,36 @@ class Blah(guimock.QMock):
 
 class LineEditTest(QtTestCase):
     def test_construct_with_undo(self):
-        """ Test undo support. """
+        """ Test constructing with undo. """
         stack = QtGui.QUndoStack()
-        edit = self.__construct("Initial", undo_stack=stack)
+
+        # Test default label for undo operation
+        edit = self.__construct("Test", undo_stack=stack)
         edit.emit(QtCore.SIGNAL("textEdited(const QString&)"), "New")
-        stack.undo()
-        edit.mockCheckNamedCall(self, "setText", -1, "Initial")
-        stack.redo()
-        edit.mockCheckNamedCall(self, "setText", -1, "New")
+        self.assertEqual(stack.undoText(), "edit text")
 
         # Test label for undo operation
         edit = self.__construct("Test", undo_stack=stack, undo_text=
             "editing test")
         edit.emit(QtCore.SIGNAL("textEdited(const QString&)"), "New")
         self.assertEqual(stack.undoText(), "editing test")
+
+    def test_undo(self):
+        """ Test undo functionality. """
+        stack = QtGui.QUndoStack()
+        edit = self.__construct("Initial", undo_stack=stack)
+        edit.emit(QtCore.SIGNAL("textEdited(const QString&)"), "New")
+        edit.emit(QtCore.SIGNAL("textEdited(const QString&)"), "New0")
+        edit.emit(QtCore.SIGNAL("editingFinished()"))
+        edit.emit(QtCore.SIGNAL("textEdited(const QString&)"), "New1")
+        stack.undo()
+        edit.mockCheckNamedCall(self, "setText", -1, "New0")
+        stack.undo()
+        edit.mockCheckNamedCall(self, "setText", -1, "Initial")
+        stack.redo()
+        edit.mockCheckNamedCall(self, "setText", -1, "New0")
+        stack.redo()
+        edit.mockCheckNamedCall(self, "setText", -1, "New1")
 
     def __construct(self, contents=QtCore.QString(), undo_stack=None,
         undo_text=None):
