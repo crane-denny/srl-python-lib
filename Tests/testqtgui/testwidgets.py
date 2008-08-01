@@ -24,7 +24,15 @@ class LineEditTest(QtTestCase):
         stack.redo()
         edit.mockCheckNamedCall(self, "setText", -1, "New")
 
-    def __construct(self, contents=QtCore.QString(), undo_stack=None):
+        # Test label for undo operation
+        edit = self.__construct("Test", undo_stack=stack, undo_text=
+            "editing test")
+        edit.emit(QtCore.SIGNAL("textEdited(const QString&)"), "New")
+        self.assertEqual(stack.undoText(), "editing test")
+
+    def __construct(self, contents=QtCore.QString(), undo_stack=None,
+        undo_text=None):
         self._set_attr(QtGui, "QLineEdit", _FakeQLineEdit)
         reload(srllib.qtgui.widgets)
-        return srllib.qtgui.widgets.LineEdit(contents, undo_stack=undo_stack)
+        return srllib.qtgui.widgets.LineEdit(contents, undo_stack=undo_stack,
+            undo_text=undo_text)
