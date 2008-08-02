@@ -1,4 +1,5 @@
 from PyQt4 import QtGui, QtCore
+from PyQt4.QtCore import Qt
 
 from testqtgui._common import *
 
@@ -72,3 +73,59 @@ class LineEditTest(QtTestCase):
         if not undo:
             return edit
         return edit, undo_stack
+
+class _FakeQCheckBox(guimock.QMock):
+    _MockRealClass = QtGui.QCheckBox
+
+    def __init__(self, label, parent):
+        guimock.QMock.__init__(self, returnValues={"checkState": Qt.Unchecked})
+
+    def setCheckState(self, checkState):
+        # PyQt doesn't accept integers for state ..
+        assert isinstance(checkState, Qt.CheckState)
+        self.mockSetReturnValue("checkState", checkState)
+        self.emit(QtCore.SIGNAL("stateChanged(int)"), int(checkState))
+
+class CheckBoxTest(QtTestCase):
+    def test_construct_with_undo(self):
+        """ Test constructing with undo. """
+        # Test default label for undo operation
+        checkbox, stack = self.__construct(undo=True)
+        self.__change_state(checkbox, True)
+        self.assertEqual(stack.undoText(), "")
+
+        # Test label for undo operation
+        checkbox, stack = self.__construct(undo=True, undo_text=
+            "check test")
+        self.__change_state(checkbox, True)
+        self.assertEqual(stack.undoText(), "check test")
+
+    def test_undo(self):
+        """ Test undo functionality. """
+        checkbox, stack = self.__construct(undo=True)
+        self.__change_state(checkbox, True)
+        self.__change_state(checkbox, False)
+        stack.undo()
+        checkbox.mockCheckNamedCall(self, "setCheckState", -1, Qt.Checked)
+        stack.undo()
+        checkbox.mockCheckNamedCall(self, "setCheckState", -1, Qt.Unchecked)
+        stack.redo()
+        checkbox.mockCheckNamedCall(self, "setCheckState", -1, Qt.Checked)
+
+    def __change_state(self, checkbox, checked):
+        if checked:
+            state = int(Qt.Checked)
+        else:
+            state = int(Qt.Unchecked)
+        checkbox.emit(QtCore.SIGNAL("stateChanged(int)"), state)
+
+    def __construct(self, checked=False, undo=False, undo_text=None):
+        if undo:
+            undo_stack = QtGui.QUndoStack()
+        self._set_attr(QtGui, "QCheckBox", _FakeQCheckBox)
+        reload(srllib.qtgui.widgets)
+        checkbox = srllib.qtgui.widgets.CheckBox(undo_stack=undo_stack,
+            undo_text=undo_text)
+        if not undo:
+            return checkbox
+        return checkbox, undo_stack

@@ -1,6 +1,7 @@
 """ Collection of widget classes.
 """
 from PyQt4 import QtGui, QtCore
+from PyQt4.QtCore import Qt
 
 import srllib.qtgui
 
@@ -8,7 +9,7 @@ class _LineEditUndo(QtGui.QUndoCommand):
     __super = QtGui.QUndoCommand
 
     def __init__(self, edit, prev_text, cur_text, cmd_text, id_):
-        self.__super.__init__(self, cmd_text, None)
+        self.__super.__init__(self, cmd_text)
         self.__edit = edit
         self.__prev = prev_text
         self.__cur = cur_text
@@ -92,3 +93,57 @@ class LineEdit(QtGui.QLineEdit):
             return
 
         self.__cur_editing = None
+
+class _CheckBoxUndo(QtGui.QUndoCommand):
+    __super = QtGui.QUndoCommand
+
+    def __init__(self, checkbox, prev_state, new_state, cmd_text):
+        self.__super.__init__(self, cmd_text)
+        self.__checkbox = checkbox
+        self.__prev = prev_state
+        self.__new = new_state
+
+    def undo(self):
+        self.__checkbox.setCheckState(self.__prev)
+
+    def redo(self):
+        self.__checkbox.setCheckState(self.__new)
+
+class CheckBox(QtGui.QCheckBox):
+    __super = QtGui.QCheckBox
+
+    def __init__(self, label=QtCore.QString(), parent=None, undo_stack=None,
+        undo_text=None):
+        self.__super.__init__(self, label, parent)
+
+        srllib.qtgui.connect(self, "stateChanged(int)", self.__state_changed)
+        self.__undo_stack = undo_stack
+        self.__cur_state = self.checkState()
+        self.__undo_txt = undo_text
+        # setCheckState will emit stateChanged, so we've got to know when to
+        # ignore it
+        self.__setting_state = False
+
+    def setCheckState(self, state):
+        self.__setting_state = True
+        try:
+            QtGui.QCheckBox.setCheckState(self, state)
+            self.__cur_state = state
+        finally: self.__setting_state = False
+
+    def __state_changed(self, state):
+        if self.__setting_state:
+            return
+        undo_stack = self.__undo_stack
+        if undo_stack is None:
+            return
+
+        # The state parameter is an integer, but a due to an inconsistency in
+        # PyQt4 setCheckState will only accept Qt.CheckState objects
+        if state == Qt.Checked:
+            state = Qt.Checked
+        elif state == Qt.Unchecked:
+            state = Qt.Unchecked
+        undo_stack.push(_CheckBoxUndo(self, self.__cur_state, state,
+            self.__undo_txt))
+        self.__cur_state = state
