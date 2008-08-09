@@ -80,3 +80,22 @@ class BrowseDirectory(_Browse):
         if not fpath.isNull():
             return fpath
         return None
+
+class UndoStack(QtGui.QUndoStack):
+    """ Specialization of QUndoStack).
+
+    @ivar is_enabled: Enable pushing of commands? If disabled, commands are only
+    performed, not pushed on the stack. Useful for modes when the undo stack
+    shouldn't be updated.
+    """
+    __super = QtGui.QUndoStack
+
+    def __init__(self, enable=True, parent=None):
+        self.__super.__init__(self, parent)
+        self.is_enabled = enable
+
+    def push(self, command):
+        if self.is_enabled:
+            self.__super.push(self, command)
+        else:
+            command.redo()
