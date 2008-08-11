@@ -44,14 +44,14 @@ class FileSystemTest(TestCase):
         dpath = self._get_tempdir()
         util.remove_dir(dpath, recurse=False)
         self.assertNot(os.path.exists(dpath))
-        
+
     def test_remove_dir_force(self):
         """ Test removing directory with read-only contents. """
         dpath = self.__create_dir()
         util.chmod(dpath, 0, recursive=True)
         util.remove_dir(dpath, force=True)
         self.assertNot(os.path.exists(dpath))
-        
+
     def test_remove_dir_missing(self):
         """ Test removing a missing directory. """
         self.assertRaises(ValueError, util.remove_dir, "nosuchdir")
@@ -123,14 +123,14 @@ class FileSystemTest(TestCase):
             util.chmod(os.path.join(dpath0, "test"), 0000)
             self.assertRaises(util.PermissionsError, util.copy_dir, dpath0,
                     dpath1, mode=util.CopyDir_Delete)
-            
+
     def test_copy_dir_delete(self):
         """ Test copying directory after first deleting the destination. """
         srcdir = self.__create_dir()
         dstdir = self._get_tempdir()
         util.copy_dir(srcdir, dstdir, mode=util.CopyDir_Delete)
         self.assertEqual(os.listdir(dstdir), os.listdir(srcdir))
-    
+
     def test_copy_dir_merge(self):
         """ Test copying directory while merging new contents with old. """
         srcdir = self._get_tempdir()
@@ -145,13 +145,13 @@ class FileSystemTest(TestCase):
         util.create_file(os.path.join(dstdir, "testdir"), "Test")
         os.mkdir(os.path.join(dstdir, "testfile"))
         util.copy_dir(srcdir, dstdir, mode=util.CopyDir_Merge)
-        
+
         self.assertSortedEqual(os.listdir(dstdir), ["testdir", "testfile",
             "oldfile", "newfile"])
         self.assert_(os.path.isdir(os.path.join(dstdir, "testdir")))
         for fname in ("testfile", "oldfile", "newfile"):
             self.assert_(os.path.isfile(os.path.join(dstdir, fname)))
-            
+
     def test_copy_dir_writefile(self):
         """ Test passing a custom writefile function to copy_dir. """
         def copyfile(src, dst, callback):
@@ -160,7 +160,7 @@ class FileSystemTest(TestCase):
             callback(100.0)
         def callback(progress):
             self.__progress.append(progress)
-            
+
         srcdir, dstdir = self._get_tempdir(), self._get_tempdir()
         util.create_file(os.path.join(srcdir, "test1"), "Test")
         self.__invoked = False
@@ -170,7 +170,7 @@ class FileSystemTest(TestCase):
         self.assert_(self.__invoked, "copyfile was not invoked")
         self.assertEqual(self.__progress, [0, 50.0, 100.0],
             "Wrong progress: %r" % self.__progress)
-        
+
     if util.get_os_name() in util.OsCollection_Posix:
         def test_copy_dir_symlink(self):
             """ Test copying directory with symlink. """
@@ -213,7 +213,7 @@ class FileSystemTest(TestCase):
             file_.seek(0)
             self.assertEqual(file_.read(), "Test\nTest")
         finally: file_.close()
-        
+
     def test_create_tempfile_invalid_encoding(self):
         self.assertRaises(UnicodeDecodeError, self.__create_tempfile,
                 content="æøå", encoding="ascii")
@@ -240,7 +240,7 @@ class FileSystemTest(TestCase):
         else:
             self.assertEqual(filemode, 0)
             self.assertEqual(dirmode, 0)
-    
+
     def test_chmod_recursive(self):
         """ Test chmod in recursive mode. """
         dpath = self._get_tempdir()
@@ -270,7 +270,7 @@ class FileSystemTest(TestCase):
         for dpath, dnames, fnames in util.walkdir(root):
             entered.append(dpath)
         self.assertEqual(entered, [root, os.path.join(root, "testdir")])
-        
+
     def test_walkdir_ignore(self):
         """ Test ignoring files.
         """
@@ -295,7 +295,7 @@ class FileSystemTest(TestCase):
             util.chmod(dpath, 0700)
         util.remove_file(fpath)
         self.assertNot(os.path.exists(fpath))
-        
+
     def test_remove_file_force(self):
         """ Test removing a read-only file forcefully. """
         dpath = self.__create_dir()
@@ -322,7 +322,7 @@ class FileSystemTest(TestCase):
         f = codecs.open(fpath, encoding="utf-8")
         try: self.assertEqual(f.read(), u"æøå")
         finally: f.close()
-        
+
     def test_read_file_unicode(self):
         """ Test reading a file with unicode content. """
         fpath = self._get_tempfname()
@@ -330,7 +330,7 @@ class FileSystemTest(TestCase):
         try: f.write(u"Æøå")
         finally: f.close()
         self.assertEqual(util.read_file(fpath, encoding="utf-8"), u"Æøå")
-        
+
     def test_create_file_bin(self):
         """ Test creating a file in binary mode. """
         f = util.create_file(self._get_tempfname(), binary=True, close=False)
@@ -342,13 +342,13 @@ class FileSystemTest(TestCase):
         """ Test creating a file with invalid encoding. """
         self.assertRaises(UnicodeDecodeError, util.create_file,
                 self._get_tempfname(), content="æøå", encoding="ascii")
-        
+
     def test_replace_root(self):
         fpath, newroot = self._get_tempfname(), self._get_tempdir()
         self.assertEqual(util.replace_root(fpath, newroot,
                 os.path.dirname(fpath)), os.path.join(newroot,
                 os.path.basename(fpath)))
-        
+
     def test_replace_root_default(self):
         """ Test replace_root with default original root. """
         if util.get_os_name() in util.OsCollection_Posix:
@@ -357,47 +357,47 @@ class FileSystemTest(TestCase):
             fpath, newroot = r"C:\file", r"Z:\\"
         self.assertEqual(util.replace_root(fpath, newroot), os.path.join(
                 newroot, "file"))
-        
+
     def test_replace_root_noroot(self):
         """ Test calling replace_root with a name with no directory component.
         """
         self.assertEqual(util.replace_root("file", "some root"), "file")
-        
+
     def test_resolve_path(self):
         """ Test resolving path to executable. """
         self.assertEquals(os.path.splitext(os.path.basename(
                 util.resolve_path("python")))[0], "python")
-        
+
     def test_resolve_path_notfound(self):
         """ Test resolving non-existent executable. """
         self.assertRaises(_srlerror.NotFound, util.resolve_path,
                 "There is no such executable.")
-        
+
     def test_resolve_path_badname(self):
         """ resolve_path should not accept a pathname with directory components.
         """
         self.assertRaises(ValueError, util.resolve_path, os.path.join("dir",
             "file"))
-        
+
     def test_compare_dirs(self):
         """ Test dir comparison. """
         dpath0 = self._get_tempdir()
         util.create_file(os.path.join(dpath0, "tmpfile"), "Test")
         self.assertEqual(util.compare_dirs(dpath0, dpath0, False), ([], []))
-        
+
     def test_compare_dirs_missing(self):
         """ Test supplying missing directories to compare_dirs.
         """
         dpath = self._get_tempdir()
         self.assertRaises(ValueError, util.compare_dirs, "nosuchdir", dpath)
         self.assertRaises(ValueError, util.compare_dirs, dpath, "nosuchdir")
-        
+
     def test_compare_dirs_first_empty(self):
         """ Test against an empty first directory. """
         dpath0, dpath1 = self._get_tempdir(), self._get_tempdir()
         util.create_file(os.path.join(dpath1, "file"))
         self.assertEqual(util.compare_dirs(dpath0, dpath1), ([], ["file"]))
-        
+
     def test_compare_dirs_subdirs(self):
         """ Test compare_dirs with differing sub-directories. """
         dpath0, dpath1 = self._get_tempdir(), self._get_tempdir()
@@ -407,16 +407,16 @@ class FileSystemTest(TestCase):
         os.mkdir(subdir1)
         util.chmod(subdir0, 0)
         self.assertEqual(util.compare_dirs(dpath0, dpath1), (["subdir"], []))
-        
+
     def test_clean_path(self):
         self.assertEqual(util.clean_path(os.path.join("dir", "..", "file")),
                 os.path.join(os.path.abspath("file")))
-        
+
     def test_get_checksum_cancel(self):
         """ Test canceling checksum calculation. """
         def callback():
             raise _srlerror.Canceled
-        
+
         path = util.create_file(self._get_tempfname(), "Test")
         self.assertRaises(_srlerror.Canceled, util.get_checksum, path, callback=
             callback)
@@ -431,7 +431,7 @@ class FileSystemTest(TestCase):
         os.mkdir(os.path.join(dpath, "testdir"))
         util.create_file(os.path.join(dpath, "testdir", "test"), "Test")
         return dpath
-    
+
     def __create_tempfile(self, *args, **kwds):
         fpath = util.create_tempfile(*args, **kwds)
         self._tempfiles.append(fpath)
@@ -446,16 +446,16 @@ class VariousTest(TestCase):
         chksum = util.get_checksum(dir1)
         self.assertNotEqual(util.get_checksum(dir0), chksum)
         self.assertEqual(util.get_checksum(fpath), chksum)
-    
+
     def test_get_checksum_invalid_format(self):
         """ Pass invalid format to get_checksum. """
         self.assertRaises(ValueError, util.get_checksum, "somepath", -1)
-        
+
     def test_get_checksum_bin(self):
         """ Test binary checksum (20 bytes). """
         self.assertEqual(len(util.get_checksum(self._get_tempfname(),
                 util.Checksum_Binary)), 20)
-    
+
     def test_get_module(self):
         """ Test the get_module function. """
         fpath = self._get_tempfname(content="test = True\n", suffix=".py")
@@ -465,18 +465,30 @@ class VariousTest(TestCase):
             # Remove .pyc
             os.remove(fpath + "c")
         self.assertEqual(m.test, True)
-        
+
     def test_get_module_missing(self):
         """ Try finding a missing module. """
         dpath = self._get_tempdir()
         self.assertRaises(ValueError, util.get_module, "missing", dpath)
-        
+
     def test_get_os_name(self):
         self.assertIn(util.get_os_name(), (util.Os_Windows, util.Os_Linux))
-        
+
     def test_get_os_version(self):
         util.get_os_version()
-        
+
     def test_get_os(self):
         self.assertEqual(util.get_os(), (util.get_os_name(),
                 util.get_os_version()))
+
+class CommandTest(TestCase):
+    """ Test Command class. """
+    def test_call(self):
+        def callback(*args, **kwds):
+            self.__cb_args, self.__cb_kwds = args, kwds
+
+        for args, kwds in (((), {}), ((1, 2), {"1": 1, "2": 2})):
+            cmd = util.Command(callback, args, kwds)
+            cmd()
+            self.assertEqual(self.__cb_args, args, )
+            self.assertEqual(self.__cb_kwds, kwds)
