@@ -62,7 +62,7 @@ def get_checksum(path, format=Checksum_Hex, callback=no_op):
         shaMthd = shaObj.hexdigest
     else:
         shaMthd = shaObj.digest
-    
+
     if os.path.isdir(path):
         for dpath, dnames, fnames in walkdir(path):
             for fname in fnames:
@@ -108,15 +108,15 @@ def get_os():
 
 def get_os_name():
     """ Get the name of the current operating system.
-    
+
     This convenience function simply returns the first element of the tuple
     returned by L{get_os}.
     """
     return get_os()[0]
-    
+
 def get_os_version():
     """ Get the version of the current operating system.
-    
+
     This convenience function simply returns the second element of the tuple
     returned by L{get_os}.
     """
@@ -137,7 +137,7 @@ def replace_root(path, new_root, orig_root=None):
     if os.path.sep not in path:
         # No directory component
         return path
-    
+
     if orig_root is None:
         # Find first dir component
         orig_root = ""
@@ -173,7 +173,7 @@ class DirNotEmpty(SrlError):
 @_raise_permissions
 def remove_dir(path, ignore_errors=False, force=False, recurse=True):
     """ Remove directory, optionally a whole directory tree (recursively).
-    
+
     @param ignore_errors: Ignore failed deletions?
     @param force: On Windows, force deletion of read-only files?
     @param recurse: Delete also contents, recursively?
@@ -206,13 +206,13 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
         finally:
             if chmodded:
                 chmod(chmodded, old_mode)
-            
+
     def handle_err(dpath):
         if not force:
             raise PermissionsError(dpath)
         os.chmod(dpath, stat.S_IEXEC | stat.S_IREAD)
         return True
-    
+
     if not os.path.exists(path):
         raise ValueError("Directory doesn't exist: %s" % path)
 
@@ -231,7 +231,7 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
 @_raise_permissions
 def get_file_permissions(path):
     """ Get permissions flags (bitwise) for a file/directory.
-    
+
     Links are not dereferenced.
     """
     return stat.S_IMODE(os.lstat(path).st_mode)
@@ -263,7 +263,7 @@ def _walkdir_handle_err(path):
 @_raise_permissions
 def walkdir(path, errorfunc=None, topdown=True, ignore=None):
     """ Directory tree generator.
-    
+
     This function works in much the same way as os.walk, but expands somewhat
     on that.
     @param path: Directory to traverse.
@@ -275,26 +275,26 @@ def walkdir(path, errorfunc=None, topdown=True, ignore=None):
     """
     if errorfunc is None:
         errorfunc = _walkdir_handle_err
-        
+
     mode = get_file_permissions(path)
     if not mode & stat.S_IREAD:
         if not errorfunc(path):
             # Ignore directory
             return
-        
+
     if ignore is None:
         ignore = []
-    
+
     dnames, fnames = [], []
     for e in os.listdir(path):
         if e in ignore:
             continue
-        
+
         if os.path.isdir(os.path.join(path, e)):
             dnames.append(e)
         else:
             fnames.append(e)
-            
+
     if topdown:
         yield path, dnames, fnames
     for d in dnames:
@@ -357,7 +357,7 @@ def remove_file(path, force=False):
             old_mode = get_file_permissions(dpath)
             chmodded = dpath
             chmod(dpath, old_mode | stat.S_IWRITE)
-    
+
     try: os.remove(path)
     finally:
         if chmodded:
@@ -385,16 +385,16 @@ class _CopyDirCallback:
     def __init__(self, total, callback):
         self.__total, self.__callback = (float(total), callback)
         self.__progress = 0.0
-        
+
     def __call__(self, progress):
         self.__callback(self.__progress + progress*self.__cur_mult)
-        
+
     def start_file(self, size):
         if self.__total != 0:
             self.__cur_mult = size / self.__total
         else:
             self.__cur_mult = 0
-        
+
     def end_file(self):
         self.__progress += 100 * self.__cur_mult
 
@@ -402,14 +402,14 @@ class _CopyDirCallback:
 def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
     copyfile=None):
     """ Copy a directory and its contents.
-    
+
     Custom File Copying
     ===================
     It is possible to specialize file copying by passing a function for the
     I{copyfile} parameter. This function receives for its two first arguments
     pathnames for the source and destination file respectively, and then a
     callback function. This function is not called with directories or symlinks.
-    
+
     The callback should be called periodically during copying, with progress
     percentage as a float.
     @param sourcedir: Source directory.
@@ -459,7 +459,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
     if copyfile is None:
         copyfile = _copy_file
     mycallback = _CopyDirCallback(allbytes, callback)
-        
+
     # First invoke the callback with a progress of 0
     callback(0)
     for dpath, dnames, fnames in walkdir(sourcedir):
@@ -484,7 +484,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
                 linktgt = os.readlink(srcpath)
                 os.symlink(linktgt, dstpath)
                 continue
-                
+
             mycallback.start_file(os.lstat(srcpath).st_size)
             copyfile(srcpath, dstpath, mycallback)
             mycallback.end_file()
@@ -492,7 +492,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
 def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
         encoding=None, dir=None):
     """ Create temporary file.
-    
+
     The file is opened in R/W mode.
     @param suffix: Optional filename suffix.
     @param prefix: Optional filename prefix.
@@ -506,7 +506,7 @@ def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
     (fd, fname) = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir)
     # File should not be automatically deleted
     os.close(fd)
-    
+
     if not close or content:
         # Open file directly instead of using fdopen, since the latter will
         # return a file with a bogus name
@@ -578,8 +578,8 @@ def read_file(name, binary=False, encoding=None):
         f = codecs.open(name, mode=mode, encoding=encoding)
     try: content = f.read()
     finally: f.close()
-    
-    return content    
+
+    return content
 
 def _sig(st):
     return (stat.S_IFMT(st.st_mode), st.st_size, stat.S_IMODE(st.st_mode),
@@ -617,15 +617,15 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
     if len(os.listdir(dir0)) == 0:
         # Indicate any files in dir1 as erroneus
         return mismatch, os.listdir(dir1)
-    
+
     if dir0[-1] != os.path.sep:
         dir0 = dir0 + os.path.sep
-    
+
     def handle_err(dpath):
         # Don't traverse this directory
         return False
     for dpath, dnames, fnames in walkdir(dir0, handle_err):
-        
+
         # Filter out files to ignore
         for ign in ignore:
             while ign in dnames:
@@ -635,7 +635,7 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
 
         reldir = dpath[len(dir0):]
         assert reldir != dpath, dpath
-        
+
         contents0 = dnames + fnames
         contents1 = [e for e in os.listdir(os.path.join(dir1, reldir)) if e not
             in ignore]
@@ -645,7 +645,7 @@ def compare_dirs(dir0, dir1, shallow=True, ignore=[], filecheck_func=None):
             for name in contents1:
                 if name not in contents0:
                     error.append(os.path.join(reldir, name))
-        
+
         for name in contents0:
             relpath = os.path.join(reldir, name)
             try:
@@ -743,3 +743,16 @@ def resolve_path(executable):
     raise NotFound(executable)
 
 #}
+
+class Command(object):
+    """ Curry a function with associated parameters.
+
+    The rationale for this class is to be able to store a function and certain
+    parameters to supply it with.
+    """
+    def __init__(self, callback, callback_args=(), callback_kwds={}):
+        self.__cb = callback
+        self.__cb_args, self.__cb_kwds = callback_args, callback_kwds
+
+    def __call__(self):
+        self.__cb(*self.__cb_args, **self.__cb_kwds)

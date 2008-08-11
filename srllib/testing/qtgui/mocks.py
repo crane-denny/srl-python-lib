@@ -154,8 +154,8 @@ class QStatusBarMock(QWidgetMock):
 class QLineEditMock(QMock):
     _MockRealClass = QLineEdit
 
-    def __init__(self):
-        QMock.__init__(self)
+    def __init__(self, *args, **kwds):
+        QMock.__init__(self, *args, **kwds)
         self.__text = ""
 
     def setText(self, text):
@@ -266,8 +266,8 @@ class QRadioButtonMock(QMock):
 class QCheckBoxMock(QMock):
     _MockRealClass = QCheckBox
 
-    def __init__(self):
-        QMock.__init__(self)
+    def __init__(self, *args, **kwds):
+        QMock.__init__(self, *args, **kwds)
         self.__checked = False
 
     def setChecked(self, checked):
