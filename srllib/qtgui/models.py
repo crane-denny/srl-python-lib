@@ -2,7 +2,6 @@
 """
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import Qt
-import copy
 
 class _AppendRowCommand(QtGui.QUndoCommand):
     __super = QtGui.QUndoCommand
@@ -14,8 +13,9 @@ class _AppendRowCommand(QtGui.QUndoCommand):
 
     def redo(self):
         # The model takes over ownership of items, so hand it copies
-        self.__model.appendRow([QtGui.QStandardItem(item) for item in
-            self.__items])
+        # Also make sure to clone, since the object may be of an arbitrary
+        # QStandardItem subclass
+        self.__model.appendRow([item.clone() for item in self.__items])
 
     def undo(self):
         self.__model.removeRow(self.__model.rowCount()-1)
