@@ -37,6 +37,25 @@ class UndoModelTest(QtTestCase):
         stack.undo()
         check_data(model, 0, 0, data[0])
 
+    def test_appendRow(self):
+        class MyItem(QtGui.QStandardItem):
+            pass
+
+        model = self.__construct(["1"])
+        stack = self.__undo_stack
+
+        model.appendRow([MyItem("text")])
+        self.assertEqual(stack.count(), 1)
+        self.assertEqual(stack.undoText(), "append row")
+        stack.undo()
+        self.assertEqual(model.rowCount(), 0)
+        stack.redo()
+        self.assertEqual(model.data(model.index(0, 0)).toString(), "text")
+        stack.undo()
+
+        model.appendRow([MyItem("text")], undo_text="add table row")
+        self.assertEqual(stack.undoText(), "add table row")
+
     def __construct(self, hor_headers=None, initial_rows=None):
         stack = self.__undo_stack = srllib.qtgui.util.UndoStack()
         model = models.UndoItemModel(self.__undo_stack, hor_headers=hor_headers)
