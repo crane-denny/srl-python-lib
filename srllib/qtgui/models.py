@@ -52,6 +52,22 @@ class _RemoveRowCommand(QtGui.QUndoCommand):
     def undo(self):
         self.__model.insertRow(self.__row, self.__items)
 
+class _TakeItemCommand(QtGui.QUndoCommand):
+    def __init__(self, model, row, column, text):
+        if text is None:
+            text = "take item"
+        QtGui.QUndoCommand.__init__(self, text)
+
+        self.item = None
+        self.__model, self.__row, self.__column = model, row, column
+
+    def redo(self):
+        self.item = self.__model.takeItem(self.__row, self.__column)
+
+    def undo(self):
+        self.__model.setItem(self.__row, self.__column, self.item)
+        self.item = None # The item is taken over by the model, access unsafe
+
 class UndoItemModel(QtGui.QSortFilterProxyModel):
     """ Item model that is capable of undoing operations.
 
@@ -61,6 +77,7 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
     QSortFilterProxyModel is subclassed since this makes it simple to implement
     a proxy (with undo logic) for a standard item model, in fact it is
     recommended by the Qt documentation to base proxy implementations on this.
+    @ivar undo_stack: The undo stack.
     """
     __super = QtGui.QSortFilterProxyModel
 
@@ -71,7 +88,7 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
         model = self.__model = QtGui.QStandardItemModel(self)
         self.setSourceModel(model)
 
-        self.__undo_stack = undo_stack
+        self.undo_stack = undo_stack
 
         if hor_headers:
             model.setHorizontalHeaderLabels(hor_headers)
@@ -93,19 +110,19 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
             for role, data in val.items():
                 item.setData(QtCore.QVariant(data), role)
             items.append(item)
-        self.__undo_stack.push(_AppendRowCommand(self.__model, items,
+        self.undo_stack.push(_AppendRowCommand(self.__model, items,
             text=undo_text))
 
     #{ Implement model interface
 
     def setData(self, index, value, role=Qt.EditRole):
         role2value = {role: value}
-        self.__undo_stack.push(_SetDataCommand(self.__model,
+        self.undo_stack.push(_SetDataCommand(self.__model,
             self.__model.index(index.row(), index.column()), role2value))
         return True
 
     def setItemData(self, index, roles):
-        self.__undo_stack.push(_SetDataCommand(self.__model,
+        self.undo_stack.push(_SetDataCommand(self.__model,
             self.__model.index(index.row(), index.column()), roles))
         return True
 
@@ -116,15 +133,24 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
     def item(self, row, column=0):
         return self.__model.item(row, column)
 
+    def setItem(self, *args):
+        self.__model.setItem(*args)
+
+    def takeItem(self, row, column=0, undo_text=None):
+        cmd = _TakeItemCommand(self.__model, row, column, text=undo_text)
+        self.undo_stack.push(cmd)
+        return cmd.item
+        # return self.__model.takeItem(row, column)
+
     def appendRow(self, items, undo_text=None):
         """ Append row of L{items<QtGui.QStandardItem>}.
         @param undo_text: Optionally specify undo text.
         """
-        self.__undo_stack.push(_AppendRowCommand(self.__model, items, text=
+        self.undo_stack.push(_AppendRowCommand(self.__model, items, text=
             undo_text))
 
     def removeRow(self, row, parent=QtCore.QModelIndex()):
-        self.__undo_stack.push(_RemoveRowCommand(self.__model, row, parent))
+        self.undo_stack.push(_RemoveRowCommand(self.__model, row, parent))
 
     def setHorizontalHeaderLabels(self, labels):
         self.__model.setHorizontalHeaderLabels(labels)
