@@ -22,7 +22,7 @@ class _AppendRowCommand(QtGui.QUndoCommand):
 
 class _SetDataCommand(QtGui.QUndoCommand):
     def __init__(self, model, index, value, role, parent=None):
-        QtGui.QUndoCommand.__init__(self)
+        QtGui.QUndoCommand.__init__(self, "set item data")
         (self.__model, self.__row, self.__col, self.__parent, self.__value,
             self.__role) = (model, index.row(), index.column(),
                 index.parent(), value, role)
@@ -93,8 +93,8 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
     #{ Implement model interface
 
     def setData(self, index, value, role=Qt.EditRole):
-        self.__undo_stack.push(_SetDataCommand(self.__model, index, value,
-            role))
+        self.__undo_stack.push(_SetDataCommand(self.__model,
+            self.__model.index(index.row(), index.column()), value, role))
         return True
 
     #}
