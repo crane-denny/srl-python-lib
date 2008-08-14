@@ -6,8 +6,10 @@ from PyQt4.QtCore import Qt
 class _AppendRowCommand(QtGui.QUndoCommand):
     __super = QtGui.QUndoCommand
 
-    def __init__(self, model, items, parent=None):
-        self.__super.__init__(self, parent)
+    def __init__(self, model, items, text, parent=None):
+        if text is None:
+            text = "append row"
+        self.__super.__init__(self, text, parent)
 
         self.__model, self.__items = model, items
 
@@ -76,11 +78,12 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
         if ver_headers:
             model.setVerticalHeaderLabels(ver_headers)
 
-    def append_row(self, values):
+    def append_row(self, values, undo_text=None):
         """ Append row of values.
 
         Values may be represented as dicts, as a mapping from role to value.
         Otherwise values are taken to be for Qt.EditRole.
+        @param undo_text: Optionally specify undo text.
         """
         items = []
         for val in values:
@@ -90,7 +93,8 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
             for role, data in val.items():
                 item.setData(QtCore.QVariant(data), role)
             items.append(item)
-        self.__undo_stack.push(_AppendRowCommand(self.__model, items))
+        self.__undo_stack.push(_AppendRowCommand(self.__model, items,
+            text=undo_text))
 
     #{ Implement model interface
 
@@ -112,10 +116,12 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
     def item(self, row, column=0):
         return self.__model.item(row, column)
 
-    def appendRow(self, items):
+    def appendRow(self, items, undo_text=None):
         """ Append row of L{items<QtGui.QStandardItem>}.
+        @param undo_text: Optionally specify undo text.
         """
-        self.__undo_stack.push(_AppendRowCommand(self.__model, items))
+        self.__undo_stack.push(_AppendRowCommand(self.__model, items, text=
+            undo_text))
 
     def removeRow(self, row, parent=QtCore.QModelIndex()):
         self.__undo_stack.push(_RemoveRowCommand(self.__model, row, parent))
