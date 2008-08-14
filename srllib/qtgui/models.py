@@ -21,18 +21,20 @@ class _AppendRowCommand(QtGui.QUndoCommand):
         self.__model.removeRow(self.__model.rowCount()-1)
 
 class _SetDataCommand(QtGui.QUndoCommand):
-    def __init__(self, model, index, value, role, parent=None):
+    def __init__(self, model, index, role2value, parent=None):
         QtGui.QUndoCommand.__init__(self, "set item data")
-        (self.__model, self.__row, self.__col, self.__parent, self.__value,
-            self.__role) = (model, index.row(), index.column(),
-                index.parent(), value, role)
-        self.__prev = self.__model.data(index, self.__role)
+        (self.__model, self.__row, self.__col, self.__parent,
+            self.__role2value) = (model, index.row(), index.column(),
+                index.parent(), role2value)
+        self.__prev = {}
+        for role in role2value:
+            self.__prev[role] = self.__model.data(index, role)
 
     def redo(self):
-        self.__model.setData(self.__get_index(), self.__value, self.__role)
+        self.__model.setItemData(self.__get_index(), self.__role2value)
 
     def undo(self):
-        self.__model.setData(self.__get_index(), self.__prev, self.__role)
+        self.__model.setItemData(self.__get_index(), self.__prev)
 
     def __get_index(self):
         return self.__model.index(self.__row, self.__col, self.__parent)
@@ -93,8 +95,14 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
     #{ Implement model interface
 
     def setData(self, index, value, role=Qt.EditRole):
+        role2value = {role: value}
         self.__undo_stack.push(_SetDataCommand(self.__model,
-            self.__model.index(index.row(), index.column()), value, role))
+            self.__model.index(index.row(), index.column()), role2value))
+        return True
+
+    def setItemData(self, index, roles):
+        self.__undo_stack.push(_SetDataCommand(self.__model,
+            self.__model.index(index.row(), index.column()), roles))
         return True
 
     #}
