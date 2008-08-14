@@ -4,6 +4,10 @@ import srllib.qtgui.util
 from srllib.qtgui import models
 
 class UndoModelTest(QtTestCase):
+    def test_construct(self):
+        model = self.__construct()
+        self.assertIs(model.undo_stack, self.__undo_stack)
+
     def test_setData(self):
         data = [QtCore.QVariant(x) for x in 1, 2]
         model = self.__construct(hor_headers=("1"), initial_rows=[[data[0]]])
@@ -39,12 +43,17 @@ class UndoModelTest(QtTestCase):
 
     def test_appendRow(self):
         class MyItem(QtGui.QStandardItem):
-            pass
+            def clone(self):
+                """ Necessary when adding to model. """
+                return MyItem(self)
 
         model = self.__construct(["1"])
         stack = self.__undo_stack
 
-        model.appendRow([MyItem("text")])
+        item = MyItem("text")
+        model.appendRow([item])
+        self.assertIsNot(model.item(0), item)
+        self.assert_(isinstance(model.item(0), MyItem))
         self.assertEqual(stack.count(), 1)
         self.assertEqual(stack.undoText(), "append row")
         stack.undo()
@@ -55,6 +64,29 @@ class UndoModelTest(QtTestCase):
 
         model.appendRow([MyItem("text")], undo_text="add table row")
         self.assertEqual(stack.undoText(), "add table row")
+
+    def test_takeItem(self):
+        model = self.__construct(initial_rows=[["text"]])
+        stack = self.__undo_stack
+
+        item = model.takeItem(0)
+        self.assertEqual(item.text(), "text")
+        self.assertIs(model.item(0), None)
+        self.assertEqual(stack.count(), 1)
+        self.assertEqual(stack.undoText(), "take item")
+        stack.undo()
+        stack.redo()
+        stack.undo()
+        self.assertEqual(model.item(0).text(), "text")
+        # Now with undo text
+        item = model.takeItem(0, undo_text="delete cell")
+        self.assertEqual(stack.undoText(), "delete cell")
+
+    def test_setItem(self):
+        model = self.__construct(initial_rows=[["old text", "old text"]])
+        model.setItem(0, 1, QtGui.QStandardItem("new text"))
+        self.assertEqual(model.item(0, 1).text(), "new text")
+        self.assertEqual(self.__undo_stack.count(), 0)
 
     def __construct(self, hor_headers=None, initial_rows=None):
         stack = self.__undo_stack = srllib.qtgui.util.UndoStack()
