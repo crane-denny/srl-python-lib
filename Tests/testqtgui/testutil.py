@@ -50,3 +50,19 @@ class UndoStackTest(TestCase):
             self.assertEqual(stack.count(), count+1)
         else:
             self.assertEqual(stack.count(), count)
+
+class VariousTest(QtTestCase):
+    def test_Action(self):
+        """ Test Action factory. """
+        def slot():
+            self.__called = True
+        self._set_attr(QtGui, "QAction", mock.MockFactory(guimocks.QActionMock))
+        self._set_attr(QtGui, "QIcon", mock.MockFactory(guimocks.QIconMock))
+        self.__called = False
+
+        action = util.Action("action", slot, "icon", "ctrl+s", None)
+        icon = guimocks.QIconMock.mockGetAllInstances()[0]
+        self.assertEqual(action.mockConstructorArgs, (icon, "action", None))
+        action.mockCheckNamedCall(self, "setShortcut", 0, "ctrl+s")
+        action.trigger()
+        self.assert_(self.__called)
