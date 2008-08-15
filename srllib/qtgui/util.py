@@ -1,4 +1,5 @@
 from _common import *
+import srllib.qtgui
 
 class BrowseFileButton(QToolButton):
     """ Standard button for browsing filesystem. """
@@ -99,3 +100,13 @@ class UndoStack(QtGui.QUndoStack):
             self.__super.push(self, command)
         else:
             command.redo()
+
+def Action(text, slot=None, icon=None, shortcut=None, parent=None):
+    """ Create a QAction.
+    """
+    action = QtGui.QAction(QtGui.QIcon(icon), text, parent)
+    if shortcut is not None:
+        action.setShortcut(shortcut)
+    if slot is not None:
+        srllib.qtgui.connect(action, "triggered()", slot)
+    return action
