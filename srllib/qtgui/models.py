@@ -42,9 +42,9 @@ class _SetDataCommand(QtGui.QUndoCommand):
         return self.__model.index(self.__row, self.__col, self.__parent)
 
 class _RemoveRowCommand(QtGui.QUndoCommand):
-    def __init__(self, model, row):
+    def __init__(self, model, row, parent):
         QtGui.QUndoCommand.__init__(self)
-        self.__model, self.__row = model, row
+        self.__model, self.__row, self.__parent = model, row, parent
 
     def redo(self):
         self.__items = self.__model.takeRow(self.__row)
@@ -151,6 +151,17 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
 
     def removeRow(self, row, parent=QtCore.QModelIndex()):
         self.undo_stack.push(_RemoveRowCommand(self.__model, row, parent))
+
+    def removeRows(self, row, count, parent=QtCore.QModelIndex(), undo_text=
+        None):
+        if undo_text is None:
+            undo_text = "remove rows"
+        self.undo_stack.beginMacro(undo_text)
+        try:
+            for i in reversed(range(row, row+count)):
+                self.removeRow(i, parent)
+        finally:
+            self.undo_stack.endMacro()
 
     def setHorizontalHeaderLabels(self, labels):
         self.__model.setHorizontalHeaderLabels(labels)

@@ -88,6 +88,25 @@ class UndoModelTest(QtTestCase):
         self.assertEqual(model.item(0, 1).text(), "new text")
         self.assertEqual(self.__undo_stack.count(), 0)
 
+    def test_removeRows(self):
+        model = self.__construct(initial_rows=[["1"], ["2"], ["3"]])
+        stack = self.__undo_stack
+
+        model.removeRows(1, 2)
+        self.assertEqual(stack.count(), 1)
+        self.assertEqual(model.rowCount(), 1)
+        self.assertEqual(model.item(0).text(), "1")
+        self.assertEqual(stack.undoText(), "remove rows")
+        stack.undo()
+        self.assertEqual(model.item(0).text(), "1")
+        self.assertEqual(model.item(1).text(), "2")
+        self.assertEqual(model.item(2).text(), "3")
+        stack.redo()
+        self.assertEqual(model.rowCount(), 1)
+        stack.undo()
+        model.removeRows(0, 3, undo_text="remove table rows")
+        self.assertEqual(stack.undoText(), "remove table rows")
+
     def __construct(self, hor_headers=None, initial_rows=None):
         stack = self.__undo_stack = srllib.qtgui.util.UndoStack()
         model = models.UndoItemModel(self.__undo_stack, hor_headers=hor_headers)
