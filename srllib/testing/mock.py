@@ -400,7 +400,7 @@ except ImportError: pass
 else:
     from srllib.testing._ifacemock import InterfaceMock
 
-def FunctionMock(returnValue):
+def FunctionMock(returnValue=None):
     """ Factory function for returning a mock acting as a function. """
     return Mock(returnValues={"__call__": returnValue})
 
