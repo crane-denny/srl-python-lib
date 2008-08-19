@@ -94,6 +94,20 @@ class LineEdit(QtGui.QLineEdit):
 
         self.__cur_editing = None
 
+class NumericalLineEdit(LineEdit):
+    """ Line edit specialization that only accepts numeric input. """
+    def __init__(self, floating_point=True, contents=QtCore.QString(),
+            parent=None, undo_stack=None, undo_text=None):
+        """ Constructor.
+        @param floating_point: Accept floating point numbers, not just integers?
+        """
+        LineEdit.__init__(self, contents=contents, parent=parent,
+                undo_stack=undo_stack, undo_text=undo_text)
+        if floating_point:
+            self.setValidator(QtGui.QDoubleValidator(self))
+        else:
+            self.setValidator(QtGui.QIntValidator(self))
+
 class _CheckBoxUndo(QtGui.QUndoCommand):
     __super = QtGui.QUndoCommand
 

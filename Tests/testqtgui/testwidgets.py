@@ -74,6 +74,22 @@ class LineEditTest(QtTestCase):
             return edit
         return edit, undo_stack
 
+class NumericalLineEditTest(QtTestCase):
+    def test_construct(self):
+        edit = self.__construct(True)
+        call = edit.mockGetNamedCall("setValidator", 0)
+        self.assert_(isinstance(call.args[0], QtGui.QDoubleValidator))
+        edit = self.__construct(False)
+        call = edit.mockGetNamedCall("setValidator", 0)
+        self.assert_(isinstance(call.args[0], QtGui.QIntValidator))
+
+    def __construct(self, floating_point, contents=QtCore.QString()):
+        self._set_attr(QtGui, "QLineEdit", _FakeQLineEdit)
+        reload(srllib.qtgui.widgets)
+        edit = srllib.qtgui.widgets.NumericalLineEdit(floating_point=
+                floating_point, contents=contents)
+        return edit
+
 class _FakeQCheckBox(guimock.QMock):
     _MockRealClass = QtGui.QCheckBox
 
