@@ -79,15 +79,32 @@ class NumericalLineEditTest(QtTestCase):
         edit = self.__construct(True)
         call = edit.mockGetNamedCall("setValidator", 0)
         self.assert_(isinstance(call.args[0], QtGui.QDoubleValidator))
+        edit = self.__construct(True, minimum=0, maximum=1)
+        call = edit.mockGetNamedCall("setValidator", 0)
+        vtor = call.args[0]
+        self.assert_(isinstance(vtor, QtGui.QDoubleValidator))
+        self.assertEqual(vtor.bottom(), 0)
+        self.assertEqual(vtor.top(), maximum)
+
         edit = self.__construct(False)
         call = edit.mockGetNamedCall("setValidator", 0)
         self.assert_(isinstance(call.args[0], QtGui.QIntValidator))
+        edit = self.__construct(True, minimum=0, maximum=1)
+        call = edit.mockGetNamedCall("setValidator", 0)
+        vtor = call.args[0]
+        self.assert_(isinstance(vtor, QtGui.QIntValidator))
+        self.assertEqual(vtor.bottom(), 0)
+        self.assertEqual(vtor.top(), maximum)
+        self.assertRaises(ValueError, self.__construct, False, minimum=0.1)
+        self.assertRaises(ValueError, self.__construct, False, maximum=0.1)
 
-    def __construct(self, floating_point, contents=QtCore.QString()):
+    def __construct(self, floating_point, contents=QtCore.QString(),
+        minimum=None, maximum=None):
         self._set_attr(QtGui, "QLineEdit", _FakeQLineEdit)
         reload(srllib.qtgui.widgets)
         edit = srllib.qtgui.widgets.NumericalLineEdit(floating_point=
-                floating_point, contents=contents)
+                floating_point, contents=contents, minimum=minimum, maximum=
+                maximum)
         return edit
 
 class _FakeQCheckBox(guimock.QMock):
