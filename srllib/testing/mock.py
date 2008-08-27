@@ -599,11 +599,11 @@ class MockCallable:
                             'Expectation failed: '+str(thisCall)
 
 
-def _findFunc(cl, name):
+def _findFunc(cls, name):
     """ Depth first search for a method with a given name. """
-    if cl.__dict__.has_key(name):
-        return cl.__dict__[name]
-    for base in cl.__bases__:
+    if cls.__dict__.has_key(name):
+        return cls.__dict__[name]
+    for base in cls.__bases__:
         func = _findFunc(base, name)
         if func:
             return func

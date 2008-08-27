@@ -2,6 +2,8 @@
 """
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from PyQt4 import QtCore, QtGui
+import warnings
 
 from srllib.testing.qtgui.mock import Mock, QMock, QWidgetMock
 
@@ -156,14 +158,10 @@ class QLineEditMock(QMock):
 
     def __init__(self, *args, **kwds):
         QMock.__init__(self, *args, **kwds)
-        self.__text = ""
 
     def setText(self, text):
-        self.__text = text
-        self.emit(SIGNAL("textEdited(const QString&)"), text)
-
-    def text(self):
-        return self.__text
+        self.mockSetReturnValue("text", text)
+        self.emit(SIGNAL("textChanged(const QString&)"), text)
 
 class QToolBoxMock(QWidgetMock):
     _MockRealClass = QToolBox
@@ -267,13 +265,21 @@ class QCheckBoxMock(QMock):
     _MockRealClass = QCheckBox
 
     def __init__(self, *args, **kwds):
+        kwds.setdefault("returnValues", {}).setdefault("checkState",
+            Qt.Unchecked)
         QMock.__init__(self, *args, **kwds)
         self.__checked = False
 
+    def setCheckState(self, checkState):
+        self.mockSetReturnValue("checkState", checkState)
+        self.emit(QtCore.SIGNAL("stateChanged(int)"), int(checkState))
+
     def setChecked(self, checked):
+        warnings.warn("Deprecated", DeprecationWarning)
         self.__checked = checked
 
     def isChecked(self):
+        warnings.warn("Deprecated", DeprecationWarning)
         return self.__checked
 
 class QListWidgetMock(QWidgetMock):

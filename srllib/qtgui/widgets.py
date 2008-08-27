@@ -31,27 +31,8 @@ class _LineEditUndo(QtGui.QUndoCommand):
     def redo(self):
         self.__edit.setText(self.__cur)
 
-class LineEdit(QtGui.QLineEdit):
-    """ Extension of QLineEdit.
-
-    This class supports the Qt undo framework. An undo operation spans the
-    interval from the user starts entering text until the widget either loses
-    focus or Enter is pressed, this is considered a suitable granularity for
-    this kind of widget.
-    """
-    __super = QtGui.QLineEdit
-
-    def __init__(self, contents=QtCore.QString(), parent=None, undo_stack=None,
-        undo_text=None):
-        """ Constructor.
-
-        @param undo_stack: Optionally specify an undo stack to manipulate as
-        the line edit's text is edited.
-        @param undo_text: Optionally specify descriptive text for the undo/redo
-        operation.
-        """
-        self.__super.__init__(self, contents, parent)
-
+class _LineEditHelper(object):
+    def __init__(self, undo_stack, undo_text):
         # Always cache the text as it is before the last change, for undo
         self.__cur_text = self.text()
         srllib.qtgui.connect(self, "textEdited(const QString&)", self.__edited)
@@ -65,10 +46,11 @@ class LineEdit(QtGui.QLineEdit):
     def setText(self, text, undoable=False):
         if undoable:
             self.__edited(text)
-        self.__super.setText(self, text)
+        self._qbase.setText(self, text)
         self.__cur_text = text
 
     def __edited(self, text):
+        """ React to text being changed. """
         undo_stack = self.__undo_stack
         if undo_stack is None:
             return
@@ -94,18 +76,30 @@ class LineEdit(QtGui.QLineEdit):
 
         self.__cur_editing = None
 
-class NumericalLineEdit(LineEdit):
-    """ Line edit specialization that only accepts numeric input. """
-    def __init__(self, floating_point=True, contents=QtCore.QString(),
-            minimum=None, maximum=None, parent=None, undo_stack=None,
-            undo_text=None):
+class LineEdit(_LineEditHelper, QtGui.QLineEdit):
+    """ Extension of QLineEdit.
+
+    This class supports the Qt undo framework. An undo operation spans the
+    interval from the user starts entering text until the widget either loses
+    focus or Enter is pressed, this is considered a suitable granularity for
+    this kind of widget.
+    """
+    _qbase = QtGui.QLineEdit
+
+    def __init__(self, contents=QtCore.QString(), parent=None, undo_stack=None,
+        undo_text=None):
         """ Constructor.
-        @param floating_point: Accept floating point numbers, not just integers?
-        @param minimum: Optionally specify minimum acceptable value.
-        @param maximum: Optionally specify maximum acceptable value.
+
+        @param undo_stack: Optionally specify an undo stack to manipulate as
+        the line edit's text is edited.
+        @param undo_text: Optionally specify descriptive text for the undo/redo
+        operation.
         """
-        LineEdit.__init__(self, contents=contents, parent=parent,
-                undo_stack=undo_stack, undo_text=undo_text)
+        self._qbase.__init__(self, contents, parent)
+        _LineEditHelper.__init__(self, undo_stack, undo_text)
+
+class _NumericalLineEditHelper(object):
+    def __init__(self, floating_point, minimum, maximum):
         if floating_point:
             vtor = QtGui.QDoubleValidator(self)
             self.setValidator(vtor)
@@ -117,13 +111,29 @@ class NumericalLineEdit(LineEdit):
             vtor = QtGui.QIntValidator(self)
             self.setValidator(vtor)
             if minimum is not None:
-                try: int(minimum)
-                except TypeError: raise ValueError(minimum)
+                if not isinstance(minimum, int):
+                    raise ValueError(minimum)
                 vtor.setBottom(minimum)
             if maximum is not None:
-                try: int(maximum)
-                except TypeError: raise ValueError(maximum)
+                if not isinstance(maximum, int):
+                    raise ValueError(maximum)
                 vtor.setTop(maximum)
+
+class NumericalLineEdit(LineEdit):
+    """ Line edit specialization that only accepts numeric input. """
+    _qbase = LineEdit
+
+    def __init__(self, floating_point=True, contents=QtCore.QString(),
+            minimum=None, maximum=None, parent=None, undo_stack=None,
+            undo_text=None):
+        """ Constructor.
+        @param floating_point: Accept floating point numbers, not just integers?
+        @param minimum: Optionally specify minimum acceptable value.
+        @param maximum: Optionally specify maximum acceptable value.
+        """
+        self._qbase.__init__(self, contents, parent, undo_stack, undo_text)
+        _NumericalLineEditHelper.__init__(self, floating_point, minimum,
+            maximum)
 
 class _CheckBoxUndo(QtGui.QUndoCommand):
     __super = QtGui.QUndoCommand
@@ -140,13 +150,8 @@ class _CheckBoxUndo(QtGui.QUndoCommand):
     def redo(self):
         self.__checkbox.setCheckState(self.__new)
 
-class CheckBox(QtGui.QCheckBox):
-    __super = QtGui.QCheckBox
-
-    def __init__(self, label=QtCore.QString(), parent=None, undo_stack=None,
-        undo_text=None):
-        self.__super.__init__(self, label, parent)
-
+class _CheckBoxHelper(object):
+    def __init__(self, undo_stack, undo_text):
         srllib.qtgui.connect(self, "stateChanged(int)", self.__state_changed)
         self.__undo_stack = undo_stack
         self.__cur_state = self.checkState()
@@ -158,7 +163,7 @@ class CheckBox(QtGui.QCheckBox):
     def setCheckState(self, state):
         self.__setting_state = True
         try:
-            QtGui.QCheckBox.setCheckState(self, state)
+            self._qbase.setCheckState(self, state)
             self.__cur_state = state
         finally: self.__setting_state = False
 
@@ -178,3 +183,11 @@ class CheckBox(QtGui.QCheckBox):
         undo_stack.push(_CheckBoxUndo(self, self.__cur_state, state,
             self.__undo_txt))
         self.__cur_state = state
+
+class CheckBox(QtGui.QCheckBox, _CheckBoxHelper):
+    _qbase = QtGui.QCheckBox
+
+    def __init__(self, label=QtCore.QString(), parent=None, undo_stack=None,
+        undo_text=None):
+        self.__super.__init__(self, label, parent)
+        _CheckBoxHelper.__init__(self, undo_stack, undo_text)
