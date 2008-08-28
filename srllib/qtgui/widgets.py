@@ -32,7 +32,8 @@ class _LineEditUndo(QtGui.QUndoCommand):
         self.__edit.setText(self.__cur)
 
 class _LineEditHelper(object):
-    def __init__(self, undo_stack, undo_text):
+    def __init__(self, undo_stack, undo_text, qbase):
+        self.__qbase = qbase
         # Always cache the text as it is before the last change, for undo
         self.__cur_text = self.text()
         srllib.qtgui.connect(self, "textEdited(const QString&)", self.__edited)
@@ -46,7 +47,7 @@ class _LineEditHelper(object):
     def setText(self, text, undoable=False):
         if undoable:
             self.__edited(text)
-        self._qbase.setText(self, text)
+        self.__qbase.setText(self, text)
         self.__cur_text = text
 
     def __edited(self, text):
@@ -84,7 +85,7 @@ class LineEdit(_LineEditHelper, QtGui.QLineEdit):
     focus or Enter is pressed, this is considered a suitable granularity for
     this kind of widget.
     """
-    _qbase = QtGui.QLineEdit
+    __super = QtGui.QLineEdit
 
     def __init__(self, contents=QtCore.QString(), parent=None, undo_stack=None,
         undo_text=None):
@@ -95,8 +96,8 @@ class LineEdit(_LineEditHelper, QtGui.QLineEdit):
         @param undo_text: Optionally specify descriptive text for the undo/redo
         operation.
         """
-        self._qbase.__init__(self, contents, parent)
-        _LineEditHelper.__init__(self, undo_stack, undo_text)
+        self.__super.__init__(self, contents, parent)
+        _LineEditHelper.__init__(self, undo_stack, undo_text, self.__super)
 
 class _NumericalLineEditHelper(object):
     def __init__(self, floating_point, minimum, maximum):
@@ -119,7 +120,7 @@ class _NumericalLineEditHelper(object):
                     raise ValueError(maximum)
                 vtor.setTop(maximum)
 
-class NumericalLineEdit(LineEdit):
+class NumericalLineEdit(_NumericalLineEditHelper, LineEdit):
     """ Line edit specialization that only accepts numeric input. """
     _qbase = LineEdit
 
@@ -185,7 +186,7 @@ class _CheckBoxHelper(object):
         self.__cur_state = state
 
 class CheckBox(QtGui.QCheckBox, _CheckBoxHelper):
-    _qbase = QtGui.QCheckBox
+    _qbase = __super = QtGui.QCheckBox
 
     def __init__(self, label=QtCore.QString(), parent=None, undo_stack=None,
         undo_text=None):
