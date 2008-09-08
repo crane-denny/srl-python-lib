@@ -11,7 +11,7 @@ class _LineEdit(srllib.qtgui.widgets._LineEditHelper, guimocks.QLineEditMock):
     def __init__(self, contents="", undo_stack=None, undo_text=None):
         self.__qbase.__init__(self, returnValues={"text": contents})
         srllib.qtgui.widgets._LineEditHelper.__init__(self, undo_stack,
-            undo_text)
+            undo_text, self.__qbase)
 
 class LineEditTest(QtTestCase):
     def test_construct_with_undo(self):
