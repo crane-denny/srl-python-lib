@@ -23,17 +23,23 @@ class _AppendRowCommand(QtGui.QUndoCommand):
         self.__model.removeRow(self.__model.rowCount()-1)
 
 class _SetDataCommand(QtGui.QUndoCommand):
-    def __init__(self, model, index, role2value, parent=None):
+    def __init__(self, undo_model, model, index, role2value, parent=None,
+            clear=False):
+        assert not isinstance(model, int)
         QtGui.QUndoCommand.__init__(self, "set item data")
-        (self.__model, self.__row, self.__col, self.__parent,
-            self.__role2value) = (model, index.row(), index.column(),
-                index.parent(), role2value)
-        self.__prev = {}
-        for role in role2value:
-            self.__prev[role] = self.__model.data(index, role)
+        (self.__undo_model, self.__model, self.__row, self.__col,
+                self.__role2value, self.__parent, self.__clear) = (undo_model,
+                        model, index.row(), index.column(), role2value,
+                        index.parent(), clear)
+        self.__prev = undo_model.itemData(undo_model.mapFromSource(index))
 
     def redo(self):
-        self.__model.setItemData(self.__get_index(), self.__role2value)
+        idx = self.__get_index()
+        if self.__clear:
+            # This clears all roles
+            self.__model.setItemData(idx, {})
+        for role, value in self.__role2value.items():
+            self.__model.setData(idx, value, role)
 
     def undo(self):
         self.__model.setItemData(self.__get_index(), self.__prev)
@@ -117,13 +123,13 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
 
     def setData(self, index, value, role=Qt.EditRole):
         role2value = {role: value}
-        self.undo_stack.push(_SetDataCommand(self.__model,
+        self.undo_stack.push(_SetDataCommand(self, self.__model,
             self.__model.index(index.row(), index.column()), role2value))
         return True
 
-    def setItemData(self, index, roles):
-        self.undo_stack.push(_SetDataCommand(self.__model,
-            self.__model.index(index.row(), index.column()), roles))
+    def setItemData(self, index, roles, clear=False):
+        self.undo_stack.push(_SetDataCommand(self, self.__model,
+            self.__model.index(index.row(), index.column()), roles, clear=clear))
         return True
 
     #}

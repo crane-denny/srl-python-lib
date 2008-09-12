@@ -21,11 +21,17 @@ class UndoModelTest(QtTestCase):
         self.assertEqual(model.data(model.index(0, 0)).toString(),
             data[0].toString())
 
+        # Add data for a role, and verify it isn't touched
+        model.setData(model.index(0, 0), QtCore.QVariant(1), Qt.UserRole+1)
+        model.setData(model.index(0, 0), QtCore.QVariant(0), Qt.UserRole)
+        self.assertEqual(model.data(model.index(0, 0),
+            Qt.UserRole+1).toInt()[0], 1)
+
     def test_setItemData(self):
         def check_data(model, row, column, data):
-            for role in (Qt.EditRole, Qt.UserRole):
+            for role, var in data.items():
                 self.assertEqual(model.data(model.index(row, column),
-                    role).toString(), data[role].toString())
+                    role).toString(), var.toString())
 
         data = [{}, {}]
         for role in (Qt.EditRole, Qt.UserRole):
@@ -40,6 +46,26 @@ class UndoModelTest(QtTestCase):
         self.assertEqual(stack.count(), 1)
         stack.undo()
         check_data(model, 0, 0, data[0])
+
+    def test_setItemData_add(self):
+        """ Test adding a role. """
+        data = {Qt.UserRole: QtCore.QVariant(0)}
+        model = self.__construct(initial_rows=[[data]])
+        assert model.itemData(model.index(0, 0)) == data
+
+        add_data = {Qt.UserRole+1: QtCore.QVariant(1)}
+        model.setItemData(model.index(0, 0), add_data)
+        data.update(add_data)
+        self.assertEqual(model.itemData(model.index(0, 0)), data)
+        
+    def test_setItemData_clear(self):
+        """ Test adding a role, clearing others. """
+        data = {Qt.UserRole: QtCore.QVariant(0)}
+        model = self.__construct(initial_rows=[[data]])
+
+        new_data = {Qt.UserRole+1: QtCore.QVariant(0)}
+        model.setItemData(model.index(0, 0), new_data, clear=True)
+        self.assertEqual(model.itemData(model.index(0, 0)), new_data)
 
     def test_appendRow(self):
         class MyItem(QtGui.QStandardItem):
@@ -113,6 +139,7 @@ class UndoModelTest(QtTestCase):
         if initial_rows:
             stack.is_enabled = False
             for row in initial_rows:
+                assert isinstance(row, (list, tuple))
                 model.append_row(row)
             stack.is_enabled = True
         return model
