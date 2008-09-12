@@ -144,11 +144,13 @@ class Application(QApplication):
                 thrdSpecific = " in thread %s" % (in_thread,)
 
             msg = ' '.join(traceback.format_exception(exc, value, tb))
-            message_critical("Fatal Error", "An unexpected exception was encountered%s, \
-the application will have to be shut down." % (thrdSpecific,), detailedText=msg, informativeText=\
-"The detailed text provides full technical information of how the error happened, so \
-developers may resolve the problem. This information should also be visible in the \
-application log.")
+            message_critical("Fatal Error", "An unexpected exception was "
+                    "encountered%s, the application will have to be shut "
+                    "down." % (thrdSpecific,), detailed_text=msg,
+                    informative_text="The detailed text provides full technical "
+                    "information of how the error happened, so developers may "
+                    "resolve the problem. This information should also be "
+                    "visible in the application log.")
 
         if not self.__hasQuit:
             self.quit()
