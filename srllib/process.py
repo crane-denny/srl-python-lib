@@ -385,14 +385,20 @@ class ThreadedProcessMonitor(object):
         thrd.start()
         
     def monitor_command(self, arguments, cwd=None, env=None):
+        """ Monitor a command.
+
+        @return: The associated L{process<subprocess.Popen>}.
+        """
         if self.__process is not None:
             raise BusyError("Another process is already being monitored")
-        self.__process = subprocess.Popen(arguments, cwd=cwd, env=env,
+        prcs = self.__process = subprocess.Popen(arguments, cwd=cwd, env=env,
                                           stdout=subprocess.PIPE, stderr=
                                           subprocess.PIPE)
         thrd = self._thrd = threading.Thread(target=self._thrdfunc, daemon=
             self._daemon)
         thrd.start()
+
+        return prcs
 
     def wait(self):
         """ Wait for monitoring thread to finish.

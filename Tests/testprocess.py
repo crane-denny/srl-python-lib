@@ -142,8 +142,8 @@ class ThreadedProcessMonitorTest(TestCase):
         procmon = _process.ThreadedProcessMonitor()
         # Use realpath in case we get a path with symlink(s)
         cwd = os.path.realpath(self._get_tempdir())
-        procmon.monitor_command(["python", "-c", "import os; print os.getcwd()"],
-                                cwd=cwd)
-        prcs = procmon.process
+        prcs = procmon.monitor_command(["python", "-c", "import os; print "
+                "os.getcwd()"], cwd=cwd)
+        
         self.assertEqual(prcs.stdout.read().strip(), cwd)
     
