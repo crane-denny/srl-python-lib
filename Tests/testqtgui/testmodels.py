@@ -3,10 +3,15 @@ from testqtgui._common import *
 import srllib.qtgui.util
 from srllib.qtgui import models
 
-class UndoModelTest(QtTestCase):
+class UndoItemModelTest(QtTestCase):
     def test_construct(self):
         model = self.__construct()
         self.assertIs(model.undo_stack, self.__undo_stack)
+
+    def test_construct_without_stack(self):
+        """ Test constructing with no undo stack. """
+        model = self.__construct(with_undo=False)
+        self.assertIsNot(model.undo_stack, None)
 
     def test_setData(self):
         data = [QtCore.QVariant(x) for x in 1, 2]
@@ -133,13 +138,16 @@ class UndoModelTest(QtTestCase):
         model.removeRows(0, 3, undo_text="remove table rows")
         self.assertEqual(stack.undoText(), "remove table rows")
 
-    def __construct(self, hor_headers=None, initial_rows=None):
-        stack = self.__undo_stack = srllib.qtgui.util.UndoStack()
-        model = models.UndoItemModel(self.__undo_stack, hor_headers=hor_headers)
+    def __construct(self, hor_headers=None, initial_rows=None, with_undo=True):
+        if with_undo:
+            stack = self.__undo_stack = srllib.qtgui.util.UndoStack()
+        else:
+            stack = self.__undo_stack = None
+        model = models.UndoItemModel(stack, hor_headers=hor_headers)
         if initial_rows:
-            stack.is_enabled = False
+            model.undo_stack.is_enabled = False
             for row in initial_rows:
                 assert isinstance(row, (list, tuple))
                 model.append_row(row)
-            stack.is_enabled = True
+            model.undo_stack.is_enabled = True
         return model
