@@ -87,13 +87,21 @@ class UndoItemModel(QtGui.QSortFilterProxyModel):
     """
     __super = QtGui.QSortFilterProxyModel
 
-    def __init__(self, undo_stack, hor_headers=None, ver_headers=None,
+    def __init__(self, undo_stack=None, hor_headers=None, ver_headers=None,
         parent=None):
-        assert undo_stack is not None
+        """ Constructor.
+        @ivar undo_stack: Optionally pass an undo stack to work with. If None,
+        the model instantiates its own.
+        @ivar hor_headers: Optionally specify horizontal header labels.
+        @ivar ver_headers: Optionally specify vertical header labels.
+        @ivar parent: Optionally pass QObject parent.
+        """
         self.__super.__init__(self, parent)
+
         model = self.__model = QtGui.QStandardItemModel(self)
         self.setSourceModel(model)
-
+        if undo_stack is None:
+            undo_stack = QtGui.QUndoStack(self)
         self.undo_stack = undo_stack
 
         if hor_headers:
