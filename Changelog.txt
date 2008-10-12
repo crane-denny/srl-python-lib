@@ -1,4 +1,7 @@
-07.00.2007 - 0.1.0a3:
+?.?.2008 - 0.2.0a2:
+    * Changed testing package to use nose 0.10 series
+
+07.08.2007 - 0.1.0a3:
     * Fixed bugs in testing.mock
     * Significantly expanded upon testing.mock module
     * New function util.read_file
