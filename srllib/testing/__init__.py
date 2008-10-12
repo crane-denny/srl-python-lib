@@ -415,14 +415,14 @@ def _error(msg):
     sys.stderr.write("%s\n" % msg)
     sys.exit(1)
 
-def run_tests(package_name, gui=False, ignore=[]):
-    """ Use C{nose} for discovering/running tests.
+def run_tests(package_name, gui=False, test_module=None):
+    """ Use L{nose} for discovering/running tests.
 
     After finishing, sys.exit is called with the success status.
     @param package_name: Name of package that is tested. Used for analyzing
     coverage by tests.
     @param gui: Do the tests involve GUI code?
-    @param ignore: Modules to ignore when analyzing coverage.
+    @param test_module: Optionally module containing tests.
     """
     import optparse, nose.core
 
@@ -439,7 +439,7 @@ def run_tests(package_name, gui=False, ignore=[]):
                 yield t
 
     try:
-        r = nose.run(defaultTest=TestCollector)
+        r = nose.run(module=test_module)
     finally:
         '''
         if gui:
