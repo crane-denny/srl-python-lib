@@ -1,5 +1,7 @@
-10.13.2008 - 0.2.0a2:
+10.17.2008 - 0.2.0a3
     * Added support for raising exceptions from testing.mock.FunctionMock
+
+10.13.2008 - 0.2.0a2:
     * Changed testing package to use nose 0.10 series
 
 07.08.2007 - 0.1.0a3:
