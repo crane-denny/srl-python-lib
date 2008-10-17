@@ -183,7 +183,7 @@ class Mock(object):
         except KeyError: pass
         name_lower = name.lower()
         if name_lower.startswith("mock") or name_lower.startswith("_mock"):
-            # Don't mock mock methods!
+            # Don't mock mock-methods!
             raise AttributeError(name)
 
         if (self.__realClass is not None and name not in self.__realClassMethods
@@ -246,8 +246,9 @@ class Mock(object):
         @param after: Optionally specify a call index after which the exception
         will be raised.
         """
-        mock_callable = getattr(self, name)
-        assert isinstance(mock_callable, MockCallable)
+        mock_callable = self.__getattr__(name)
+        assert (isinstance(mock_callable, MockCallable),
+                "Expected MockCallable, got %r" % (mock_callable))
         mock_callable.setRaises(exc, until=until, after=after)
 
     def mockGetCall(self, idx):
@@ -400,9 +401,15 @@ except ImportError: pass
 else:
     from srllib.testing._ifacemock import InterfaceMock
 
-def FunctionMock(returnValue=None):
-    """ Factory function for returning a mock acting as a function. """
-    return Mock(returnValues={"__call__": returnValue})
+def FunctionMock(returnValue=None, raises=None):
+    """ Factory function for returning a mock acting as a function.
+    @ivar returnValue: Optionally specify return value.
+    @ivar raises: Optionally specify an exception this function shall raise.
+    """
+    fm = Mock(returnValues={"__call__": returnValue})
+    if raises is not None:
+        fm.mockSetRaises("__call__", raises)
+    return fm
 
 class MockFactory(object):
     """ Utility class intended to act as a fake constructor for mocks.
