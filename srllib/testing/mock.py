@@ -1,7 +1,7 @@
 #
 # (c) Dave Kirby 2001 - 2005
 #     mock@thedeveloperscoach.com
-# (c) Arve Knudsen 2007
+# (c) Arve Knudsen 2007-2008
 #     arve.knudsen@gmail.com
 #
 # Original call interceptor and call assertion code by Phil Dawes (pdawes@users.sourceforge.net)
@@ -247,8 +247,8 @@ class Mock(object):
         will be raised.
         """
         mock_callable = self.__getattr__(name)
-        assert (isinstance(mock_callable, MockCallable),
-                "Expected MockCallable, got %r" % (mock_callable))
+        assert isinstance(mock_callable, MockCallable), \
+                "Expected MockCallable, got %r" % (mock_callable)
         mock_callable.setRaises(exc, until=until, after=after)
 
     def mockGetCall(self, idx):
