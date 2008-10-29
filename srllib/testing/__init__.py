@@ -1,5 +1,6 @@
 """ Unit testing functionality. """
 import unittest, os.path, sys, shutil, tempfile
+import warnings
 
 import srllib.util
 from mock import Mock
@@ -206,9 +207,22 @@ class TestCase(unittest.TestCase):
         self._tempdirs.append(dtemp)
         return dtemp
     
-    def _get_privattr(self, obj, name):
-        """ Get a private (name mangled) attribute of an object. """
-        return getattr(obj, "_%s%s" % (obj.__class__.__name__, name))
+    def _get_privattr(self, obj, name, classname=None):
+        """ Get a private (name mangled) attribute of an object.
+        @param classname: Optionally specify the class in question where the
+        private attribute is set. Otherwise it is deduced from the object's
+        class.
+        """
+        if classname is None:
+            classname = obj.__class__.__name__
+        if not classname.startswith("_"):
+            classname = "_" + classname
+        if not name.startswith("__"):
+            name = "__" + name
+        else:
+            warnings.warn("specifying private prefix is deprecated",
+                    DeprecationWarning, stacklevel=2)
+        return getattr(obj, "%s%s" % (classname, name))
     
     def _set_privattr(self, obj, name, val, assert_exists=True):
         """ Set a private (name mangled) attribute of an object.
