@@ -1,4 +1,5 @@
 10.17.2008 - 0.2.0a3
+    * Revised testing.TestCase._get_privattr semantics
     * Added support for raising exceptions from testing.mock.FunctionMock
 
 10.13.2008 - 0.2.0a2:
