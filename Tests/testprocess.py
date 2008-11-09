@@ -21,7 +21,6 @@ def _childfunc_sleeps():
         time.sleep(0.1)
 
 class ProcessTest(TestCase):
-    
     def test_child_exception(self):
         """ Test catching an exception raised in the child. """
         proc = _process.Process(_childfunc_raises)
@@ -40,11 +39,10 @@ class ProcessTest(TestCase):
     def test_terminate(self):
         """ Test terminating the child process. """
         proc = _process.Process(_childfunc_sleeps)
-        try:
-            self.assertEqual(proc.terminate(), -signal.SIGTERM)
-            # Make sure that it is safe to call this after the process has exited
-            self.assertEqual(proc.terminate(), -signal.SIGTERM)
-        finally: proc.close()
+        self.assertEqual(proc.terminate(), -signal.SIGTERM)
+        # Make sure that it is safe to call this after the process has exited
+        self.assertEqual(proc.terminate(), -signal.SIGTERM)
+        proc.close()
     
     '''
     def test_run_in_terminal(self):
