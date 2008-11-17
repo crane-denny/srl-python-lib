@@ -58,6 +58,7 @@ __version__ = "0.2.0"
 # Added in Python 2.1
 import inspect
 import re
+import warnings
 
 import srllib.inspect
 
@@ -421,7 +422,7 @@ class MockFactory(object):
 
     If the object has a method "mockInit", that will be called after
     construction with the factory arguments/keywords.
-    @ivar constructed: Constructed objects.
+    @ivar mock_constructed: Constructed objects.
     """
     def __init__(self, cls=Mock, mockArgs=(), mockKwds={}, directArgs=False):
         """ Constructor.
@@ -432,7 +433,7 @@ class MockFactory(object):
         @param directArgs: Use construction arguments directly when constructing
         the object?
         """
-        self.constructed = []
+        self.mock_constructed = []
         (self.__cls, self.__args, self.__kwds, self.__directArgs) = (cls,
             mockArgs, mockKwds, directArgs)
 
@@ -444,8 +445,13 @@ class MockFactory(object):
         obj.mockConstructorArgs, obj.mockConstructorKwds = (args, kwds)
         if hasattr(obj, "mockInit"):
             obj.mockInit(*args, **kwds)
-        self.constructed.append(obj)
+        self.mock_constructed.append(obj)
         return obj
+    
+    @property
+    def constructed(self):
+        warnings.warn("use mock_constructed instead", DeprecationWarning, stacklevel=2)
+        return self.mock_constructed
 
 def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
     """
