@@ -58,6 +58,7 @@ __version__ = "0.2.0"
 # Added in Python 2.1
 import inspect
 import re
+import warnings
 
 import srllib.inspect
 
@@ -432,7 +433,7 @@ class MockFactory(object):
         @param directArgs: Use construction arguments directly when constructing
         the object?
         """
-        self.mock_constructed = self.constructed = []
+        self.mock_constructed = []
         (self.__cls, self.__args, self.__kwds, self.__directArgs) = (cls,
             mockArgs, mockKwds, directArgs)
 
@@ -446,6 +447,11 @@ class MockFactory(object):
             obj.mockInit(*args, **kwds)
         self.mock_constructed.append(obj)
         return obj
+    
+    @property
+    def constructed(self):
+        warnings.warn("use mock_constructed instead", DeprecationWarning, stacklevel=2)
+        return self.mock_constructed
 
 def _getNumPosSeenAndCheck(numPosCallParams, callKwParams, args, varkw):
     """

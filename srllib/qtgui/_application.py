@@ -63,10 +63,9 @@ class Application(QApplication):
         """ Set overriding cursor for application. Argument cursor should either
         be suitable enumeration or a QCursor.
         """
-        if type(cursor) is not QCursor:
-            QApplication.setOverrideCursor(QCursor(cursor))
-        else:
-            QApplication.setOverrideCursor(cursor)
+        if isinstance(cursor, int):
+            cursor = QtGui.QCursor(cursor)
+        QApplication.setOverrideCursor(cursor)
 
     def customEvent(self, e):
         if not isinstance(e, _AsyncEvent):
