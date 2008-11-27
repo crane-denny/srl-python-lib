@@ -51,7 +51,7 @@ class TestCase(unittest.TestCase):
         for dtemp in self._tempdirs:
             if not os.path.exists(dtemp):
                 continue
-            srllib.util.remove_dir(dtemp, True, True)
+            srllib.util.remove_dir(dtemp, force=True, recurse=True)
 
         # Reset Mock register
         Mock.mockInstances.clear()

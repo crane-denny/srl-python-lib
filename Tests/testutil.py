@@ -240,6 +240,7 @@ class FileSystemTest(TestCase):
         else:
             self.assertEqual(filemode, 0)
             self.assertEqual(dirmode, 0)
+        print "Testing"
 
     def test_chmod_recursive(self):
         """ Test chmod in recursive mode. """
@@ -313,7 +314,7 @@ class FileSystemTest(TestCase):
 
     def test_get_os(self):
         self.assertIn(srllib.util.get_os()[0], (srllib.util.Os_Linux,
-                srllib.util.Os_Windows))
+                srllib.util.Os_Windows, srllib.util.Os_Mac))
 
     def test_create_file_unicode(self):
         """ Test creating file with unicode content. """
@@ -472,7 +473,7 @@ class VariousTest(TestCase):
         self.assertRaises(ValueError, util.get_module, "missing", dpath)
 
     def test_get_os_name(self):
-        self.assertIn(util.get_os_name(), (util.Os_Windows, util.Os_Linux))
+        self.assertIn(util.get_os_name(), (util.Os_Windows, util.Os_Linux, util.Os_Mac))
 
     def test_get_os_version(self):
         util.get_os_version()

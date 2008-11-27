@@ -1,8 +1,7 @@
 """ Various utility functionality.
-@var Os_Linux: Tuple of identifiers for known versions of the Linux operating
-system
-@var Os_Windows: Tuple of identifiers for known versions of the Windows
-operating system
+@var Os_Linux: Identifier for the Linux operating system.
+@var Os_Windows: Identifier the Windows operating system.
+@var Os_Mac: Identifier for the Mac OS operating system.
 """
 import stat, shutil, os.path, imp, platform, fnmatch, sys, errno, \
         codecs
@@ -92,8 +91,9 @@ def get_module(name, path):
 
 Os_Linux = "linux"
 Os_Windows = "windows"
+Os_Mac = "darwin"
 
-OsCollection_Posix = (Os_Linux,)
+OsCollection_Posix = (Os_Linux, Os_Mac)
 Os_Posix = OsCollection_Posix   # Backwards-compat
 
 def get_os():
@@ -161,6 +161,8 @@ def _raise_permissions(func):
         try: return func(*args, **kwds)
         except EnvironmentError, err:
             if err.errno == errno.EACCES:
+                import stat
+                mode = stat.S_IMODE((os.lstat(os.path.dirname(err.filename)).st_mode)) & stat.S_IEXEC
                 raise PermissionsError(err.filename)
             else:
                 raise
@@ -190,13 +192,12 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
                     mode |= stat.S_IWRITE
                 chmod(path, mode)
             elif get_os_name() in OsCollection_Posix:
-                # On POSIX, it is the permissions of the containing directory
-                # that matters when deleting
+                # On POSIX, the permissions of the containing directory matter
+                # when deleting
                 old_mode = get_file_permissions(os.path.dirname(path))
                 if not old_mode & stat.S_IWRITE:
                     chmodded = os.path.dirname(path)
                     chmod(chmodded, old_mode | stat.S_IWRITE)
-
         try:
             assert not os.listdir(path), os.listdir(path)
             try: os.rmdir(path)
