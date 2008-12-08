@@ -213,6 +213,22 @@ class TestCase(unittest.TestCase):
         private attribute is set. Otherwise it is deduced from the object's
         class.
         """
+        mangled_name = self.__mangle_priv(obj, classname, name)
+        return getattr(obj, mangled_name)
+    
+    def _set_privattr(self, obj, name, val, assert_exists=True, classname=None):
+        """ Set a private (name mangled) attribute of an object.
+        @param assert_exists: Assert that the attribute already exists?
+        @param classname: Optionally specify the class in question where the
+        private attribute is set. Otherwise it is deduced from the object's
+        class.
+        """
+        mangled_name = self.__mangle_priv(obj, classname, name)
+        if assert_exists:
+            getattr(obj, mangled_name)
+        setattr(obj, mangled_name, val)
+
+    def __mangle_priv(self, obj, classname, name):
         if classname is None:
             classname = obj.__class__.__name__
         if not classname.startswith("_"):
@@ -222,21 +238,8 @@ class TestCase(unittest.TestCase):
         else:
             warnings.warn("specifying private prefix is deprecated",
                     DeprecationWarning, stacklevel=2)
-        return getattr(obj, "%s%s" % (classname, name))
-    
-    def _set_privattr(self, obj, name, val, assert_exists=True):
-        """ Set a private (name mangled) attribute of an object.
-        @param assert_exists: Assert that the attribute already exists?
-        """
-        if not isinstance(obj, type):
-            cls = obj.__class__
-        else:
-            cls = obj
-        prefix = "_" if not cls.__name__.startswith("_") else ""
-        mangled_name = "%s%s%s" % (prefix, cls.__name__, name)
-        if assert_exists:
-            getattr(obj, mangled_name)
-        setattr(obj, mangled_name, val)
+
+        return "%s%s" % (classname, name)
 
 class TestPersistent(TestCase):
     pass
