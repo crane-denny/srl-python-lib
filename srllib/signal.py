@@ -39,9 +39,12 @@ class _MethodProxy(object):
         instance, mthd = self._get_refs()
         try: mthd(instance, *args, **kwds)
         except TypeError, err:
-            raise CallFailure("Calling slot %s.%s resulted in TypeError, check \
+            if not sys.exc_info()[-1].tb_next:
+                # The exception happened in this frame
+                raise CallFailure("Calling slot %s.%s resulted in TypeError, check \
 your arguments; the original exception was: `%s'" %
-                    (mthd.__module__, mthd.__name__, err.message,))
+                        (mthd.__module__, mthd.__name__, err.message,))
+            raise
 
     def __eq__(self, rhs):
         if isinstance(rhs, _MethodProxy):
