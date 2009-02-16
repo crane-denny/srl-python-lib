@@ -104,7 +104,9 @@ class UndoStack(QtGui.QUndoStack):
 def Action(text, slot=None, icon=None, shortcut=None, parent=None):
     """ Create a QAction.
     """
-    action = QtGui.QAction(QtGui.QIcon(icon), text, parent)
+    if icon is not None:
+        icon = QtGui.QIcon(icon)
+    action = QtGui.QAction(icon, text, parent)
     if shortcut is not None:
         action.setShortcut(shortcut)
     if slot is not None:
