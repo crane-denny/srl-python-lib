@@ -364,6 +364,12 @@ class FileSystemTest(TestCase):
         """
         self.assertEqual(util.replace_root("file", "some root"), "file")
 
+    def test_replace_root_badroot(self):
+        """Test replace_root with an invalid original root."""
+        self.assertEqual(util.replace_root(os.path.join("root", "file"), "",
+            "badroot"), os.path.join("root", "file"))
+
+
     def test_resolve_path(self):
         """ Test resolving path to executable. """
         self.assertEquals(os.path.splitext(os.path.basename(
