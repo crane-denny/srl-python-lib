@@ -133,6 +133,7 @@ def replace_root(path, new_root, orig_root=None):
     @param orig_root: The original root component to replace, if C{None} the
     first directory component.
     @return: The new pathname.
+    @raise ValueError: Original root not found in pathname.
     """
     if os.path.sep not in path:
         # No directory component
@@ -152,7 +153,7 @@ def replace_root(path, new_root, orig_root=None):
     if not orig_root or orig_root[-1] != os.path.sep:
         orig_root += os.path.sep
     if not path.startswith(orig_root):
-        return path
+        raise ValueError(orig_root)
 
     relPath = path[len(orig_root):]
     return os.path.join(new_root, relPath)

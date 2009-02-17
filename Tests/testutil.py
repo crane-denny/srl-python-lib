@@ -366,8 +366,8 @@ class FileSystemTest(TestCase):
 
     def test_replace_root_badroot(self):
         """Test replace_root with an invalid original root."""
-        self.assertEqual(util.replace_root(os.path.join("root", "file"), "",
-            "badroot"), os.path.join("root", "file"))
+        self.assertRaises(ValueError, util.replace_root, os.path.join("root",
+            "file"), "", "badroot")
 
 
     def test_resolve_path(self):
