@@ -8,11 +8,14 @@ import srllib.qtgui
 class _LineEditUndo(QtGui.QUndoCommand):
     __super = QtGui.QUndoCommand
 
-    def __init__(self, edit, prev_text, cur_text, cmd_text, id_):
+    def __init__(self, edit, prev_text, prev_pos, cur_text, cur_pos, cmd_text,
+            id_):
         self.__super.__init__(self, cmd_text)
         self.__edit = edit
         self.__prev = prev_text
+        self.__prev_pos = prev_pos
         self.__cur = cur_text
+        self.__cur_pos = cur_pos
         self.__id = id_
 
     def id(self):
@@ -27,15 +30,18 @@ class _LineEditUndo(QtGui.QUndoCommand):
 
     def undo(self):
         self.__edit.setText(self.__prev)
+        self.__edit.setCursorPosition(self.__prev_pos)
 
     def redo(self):
         self.__edit.setText(self.__cur)
+        self.__edit.setCursorPosition(self.__cur_pos)
 
 class _LineEditHelper(object):
     def __init__(self, undo_stack, undo_text, qbase):
         self.__qbase = qbase
-        # Always cache the text as it is before the last change, for undo
+        # Always cache state as it is before the last change, for undo
         self.__cur_text = self.text()
+        self.__cur_pos = self.cursorPosition()
         srllib.qtgui.connect(self, "textEdited(const QString&)", self.__edited)
         srllib.qtgui.connect(self, "editingFinished()", self.__editing_finished)
         self.__undo_stack = undo_stack
@@ -49,6 +55,7 @@ class _LineEditHelper(object):
             self.__edited(text)
         self.__qbase.setText(self, text)
         self.__cur_text = text
+        self.__cur_pos = self.cursorPosition()
 
     def __edited(self, text):
         """ React to text being changed. """
@@ -64,9 +71,11 @@ class _LineEditHelper(object):
 
         # Make sure to make a copy of the text
         my_text = QtCore.QString(text)
-        undo_stack.push(_LineEditUndo(self, self.__cur_text, my_text,
-            self.__undo_txt, id_))
+        pos = self.cursorPosition()
+        undo_stack.push(_LineEditUndo(self, self.__cur_text, self.__cur_pos, my_text,
+            pos, self.__undo_txt, id_))
         self.__cur_text = my_text
+        self.__cur_pos = pos
 
     def __editing_finished(self):
         """ We've either lost focus or the user has pressed Enter.

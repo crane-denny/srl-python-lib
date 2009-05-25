@@ -158,10 +158,18 @@ class QLineEditMock(QMock):
 
     def __init__(self, *args, **kwds):
         QMock.__init__(self, *args, **kwds)
+        self.mockSetReturnValue("cursorPosition", len(self.text()))
 
     def setText(self, text):
         self.mockSetReturnValue("text", text)
         self.emit(SIGNAL("textChanged(const QString&)"), text)
+        self.setCursorPosition(len(text))
+
+    def setCursorPosition(self, pos):
+        old_pos = self.cursorPosition()
+        self.mockSetReturnValue("cursorPosition", pos)
+        self.emit(SIGNAL("cursorPositionChanged(int, int)"),
+            old_pos, pos)
 
 class QToolBoxMock(QWidgetMock):
     _MockRealClass = QToolBox

@@ -9,3 +9,4 @@ setup.cfg
 \..*project
 \.settings
 \.coverage
+.*~
