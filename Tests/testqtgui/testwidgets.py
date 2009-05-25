@@ -8,10 +8,13 @@ import srllib.qtgui.widgets
 class _LineEdit(srllib.qtgui.widgets._LineEditHelper, guimocks.QLineEditMock):
     _qbase = __qbase = guimocks.QLineEditMock
 
-    def __init__(self, contents="", undo_stack=None, undo_text=None):
+    def __init__(self, contents="", undo_stack=None, undo_text=None, pos=None):
         self.__qbase.__init__(self, returnValues={"text": contents})
         srllib.qtgui.widgets._LineEditHelper.__init__(self, undo_stack,
-            undo_text, self.__qbase)
+                undo_text, self.__qbase)
+        if pos is None:
+            pos = len(contents) + 1
+        self.setCursorPosition(pos)
 
 class LineEditTest(QtTestCase):
     def test_construct_with_undo(self):
@@ -61,11 +64,18 @@ class LineEditTest(QtTestCase):
         stack.undo()
         edit.mockCheckNamedCall(self, "setText", -1, "Old")
 
+    def test_editText_cursor(self):
+        """Verify that the cursor position is kept."""
+        edit, stack = self.__construct("Txt", undo=True, pos=1)
+        edit.emit(QtCore.SIGNAL("textEdited(const QString&)"), "Text")
+        self.assertEqual(edit.cursorPosition(), 1)
+
     def __construct(self, contents=QtCore.QString(), undo=False,
-        undo_text=None):
+            undo_text=None, pos=None):
         if undo:
             undo_stack = QtGui.QUndoStack()
-        edit = _LineEdit(contents, undo_stack=undo_stack, undo_text=undo_text)
+        edit = _LineEdit(contents, undo_stack=undo_stack, undo_text=undo_text,
+                pos=pos)
         if not undo:
             return edit
         return edit, undo_stack
