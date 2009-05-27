@@ -166,10 +166,16 @@ class TestCase(unittest.TestCase):
         raise exception
 
     def _get_datapath(self, relpath, abs=False):
-        """ For subclasses: Get path to file in "Data" directory.
+        """ For subclasses: Get path to file in data directory.
+
+        The data directory is called "Data" and resides under the test module
+        (taken to be the calling module).
         @param abs: Return absolute path?
         """
-        dpath = os.path.join("Data", relpath)
+        # Get calling module
+        calling_mod = sys.modules[sys._getframe(2).f_globals['__name__']]
+        calling_mod_dir = os.path.dirname(calling_mod.__file__)
+        dpath = os.path.join(calling_mod_dir, "Data", relpath)
         if abs:
             dpath = os.path.abspath(dpath)
         return dpath
