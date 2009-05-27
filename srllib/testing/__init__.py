@@ -173,7 +173,7 @@ class TestCase(unittest.TestCase):
         @param abs: Return absolute path?
         """
         # Get calling module
-        calling_mod = sys.modules[sys._getframe(2).f_globals['__name__']]
+        calling_mod = sys.modules[sys._getframe(1).f_globals['__name__']]
         calling_mod_dir = os.path.dirname(calling_mod.__file__)
         dpath = os.path.join(calling_mod_dir, "Data", relpath)
         if abs:
