@@ -5,6 +5,8 @@ from PyQt4.QtGui import *
 from PyQt4 import QtCore, QtGui
 import warnings
 
+from srllib.qtgui import widgets
+
 from srllib.testing.qtgui.mock import Mock, QMock, QWidgetMock, QDialogMock
 
 class QDockWidgetMock(QWidgetMock):
@@ -376,3 +378,6 @@ class BrowseDirectoryMock(QWidgetMock):
 
     def setPath(self, path):
         self.path_edit.setText(path)
+
+class NumericalLineEditMock(QLineEditMock):
+    _MockRealClass = widgets.NumericalLineEdit
