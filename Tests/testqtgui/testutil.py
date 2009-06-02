@@ -66,3 +66,37 @@ class VariousTest(QtTestCase):
         action.mockCheckNamedCall(self, "setShortcut", 0, "ctrl+s")
         action.trigger()
         self.assert_(self.__called)
+
+
+class _BrowseFile(util._BrowseHelper, guimocks.QWidgetMock):
+    def __init__(self, *args, **kwds):
+        guimocks.QWidgetMock.__init__(self)
+        self.path_edit = guimocks.QLineEditMock()
+        util._BrowseHelper.__init__(self, *args, **kwds)
+
+
+class BrowseHelperTest(QtTestCase):
+    def test_construct(self):
+        browse = self.__test_construct()
+        self.assertNot(browse.path_edit.isReadOnly())
+        browse = self.__test_construct(kwds={"readonly": True})
+        self.assert_(browse.path_edit.isReadOnly())
+        browse = self.__test_construct(kwds={"path": "file"})
+
+    def __test_construct(self, kwds={}):
+        browse = self.__construct(kwds=kwds)
+        path = kwds.get("path")
+
+        path_edit = browse.path_edit
+        if path is not None:
+            self.assertEqual(path_edit.text(), path)
+        else:
+            self.assertEqual(path_edit.text(), "")
+        tooltip = kwds.get("tooltip")
+        if tooltip is not None:
+            path_edit.mockCheckNamedCall(self, "setToolTip", -1, tooltip)
+        return browse
+
+    def __construct(self, kwds={}):
+        browser = _BrowseFile(**kwds)
+        return browser
