@@ -364,3 +364,12 @@ class QFileMock(QMock):
 
 class QTextStreamMock(QMock):
     _MockRealClass = QTextStream
+
+
+class BrowseDirectoryMock(QWidgetMock):
+    def __init__(self, baseargs=(), basekwds={}):
+        QWidgetMock.__init__(self, *baseargs, **basekwds)
+        self.path_edit = QLineEditMock()
+
+    def setPath(self, path):
+        self.path_edit.setText(path)

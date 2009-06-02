@@ -34,8 +34,8 @@ class QMock(QObject, Mock):
         # QObject.emit(self, signal, *args)
 
 class QWidgetMock(QMock):
-    def __init__(self):
-        QMock.__init__(self)
+    def __init__(self, *args, **kwds):
+        QMock.__init__(self, *args, **kwds)
         self.__enabled = True
 
     def setEnabled(self, enabled):
