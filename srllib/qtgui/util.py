@@ -44,7 +44,7 @@ class _Browse(QWidget, _BrowseHelper):
     def __slot_browse(self):
         fpath = self._get_filepath()
         if fpath is not None:
-            self.setPath(fpath)
+            self.setPath(QDir.toNativeSeparators(fpath))
 
 class BrowseFile(_Browse):
     """ Widget composed of a QLineEdit and a L{BrowseFileButton} for browsing
