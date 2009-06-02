@@ -43,3 +43,7 @@ class QWidgetMock(QMock):
 
     def isEnabled(self):
         return self.__enabled
+
+
+class QDialogMock(QWidgetMock):
+    pass

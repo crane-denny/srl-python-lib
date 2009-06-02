@@ -5,7 +5,7 @@ from PyQt4.QtGui import *
 from PyQt4 import QtCore, QtGui
 import warnings
 
-from srllib.testing.qtgui.mock import Mock, QMock, QWidgetMock
+from srllib.testing.qtgui.mock import Mock, QMock, QWidgetMock, QDialogMock
 
 class QDockWidgetMock(QWidgetMock):
     _MockRealClass = QDockWidget
@@ -364,6 +364,9 @@ class QFileMock(QMock):
 
 class QTextStreamMock(QMock):
     _MockRealClass = QTextStream
+
+class QMessageBoxMock(QDialogMock):
+    Yes, No, Cancel = range(3)
 
 
 class BrowseDirectoryMock(QWidgetMock):
