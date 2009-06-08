@@ -3,8 +3,10 @@ import srllib.qtgui
 
 class BrowseFileButton(QToolButton):
     """ Standard button for browsing filesystem. """
-    def __init__(self, parent=None, tooltip=None):
+    def __init__(self, parent=None, tooltip=None, icon=None):
         QToolButton.__init__(self, parent)
+        if icon is not None:
+            self.setIcon(icon)
         self.setText("...")
         if tooltip:
             self.setToolTip(tooltip)
@@ -24,11 +26,12 @@ class _BrowseHelper(object):
         self.path_edit.setText(path)
 
 class _Browse(QWidget, _BrowseHelper):
-    def __init__(self, parent, tooltip, browse_tooltip, readonly, path):
+    def __init__(self, parent, tooltip, browse_tooltip, readonly, path,
+            icon):
         QWidget.__init__(self, parent)
 
         path_edit, browse_btn = self.path_edit, self.browse_button = \
-                QLineEdit(self), BrowseFileButton(self)
+                QLineEdit(self), BrowseFileButton(self, icon=icon)
         if browse_tooltip:
             browse_btn.setToolTip(browse_tooltip)
 
@@ -57,7 +60,7 @@ class BrowseFile(_Browse):
     DefaultBrowseTooltip = "Browse for file"
 
     def __init__(self, parent=None, tooltip=None, browse_tooltip=DefaultBrowseTooltip,
-            filter=None, readonly=False, path=None):
+            filter=None, readonly=False, path=None, icon=None):
         """
         @param tooltip: Optionally specify tooltip for line edit.
         @param browse_tooltip: Optionally specify tooltip for browse button.
@@ -65,8 +68,10 @@ class BrowseFile(_Browse):
         "Images (*.png *.jpg)".
         @param readonly: Make line edit read-only?
         @param path: Optional initial path.
+        @param icon: Optional button icon.
         """
-        _Browse.__init__(self, parent, tooltip, browse_tooltip, readonly, path)
+        _Browse.__init__(self, parent, tooltip, browse_tooltip, readonly, path,
+                icon)
 
         self.__filter = filter or QString()
 
@@ -88,17 +93,20 @@ class BrowseDirectory(_Browse):
     DefaultBrowseTooltip = "Browse for directory"
 
     def __init__(self, parent=None, tooltip=None, browse_tooltip=DefaultBrowseTooltip,
-            readonly=False, path=None):
+            readonly=False, path=None, icon=None):
         """
         @param tooltip: Optionally specify tooltip for line edit.
         @param browse_tooltip: Optionally specify tooltip for browse button.
         @param readonly: Make line edit read-only?
         @param path: Optional initial path.
+        @param icon: Optional button icon.
         """
-        _Browse.__init__(self, parent, tooltip, browse_tooltip, readonly, path)
+        _Browse.__init__(self, parent, tooltip, browse_tooltip, readonly, path,
+                icon)
 
     def _get_filepath(self):
-        fpath = QFileDialog.getExistingDirectory(self, "Open Directory", self.path_edit.text())
+        fpath = QFileDialog.getExistingDirectory(self, "Open Directory",
+                self.path_edit.text())
         if not fpath.isNull():
             return fpath
         return None
