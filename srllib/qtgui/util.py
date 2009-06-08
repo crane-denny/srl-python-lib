@@ -15,11 +15,11 @@ class _BrowseHelper(object):
             self.path_edit.setReadOnly(True)
         self.__tooltip = tooltip
         if path is not None:
-            self.setPath(path)
+            self.set_path(path)
         if tooltip:
             path_edit.setToolTip(tooltip)
 
-    def setPath(self, path):
+    def set_path(self, path):
         """Set filepath."""
         self.path_edit.setText(path)
 
@@ -44,7 +44,7 @@ class _Browse(QWidget, _BrowseHelper):
     def __slot_browse(self):
         fpath = self._get_filepath()
         if fpath is not None:
-            self.setPath(QDir.toNativeSeparators(fpath))
+            self.set_path(QDir.toNativeSeparators(fpath))
 
 class BrowseFile(_Browse):
     """ Widget composed of a QLineEdit and a L{BrowseFileButton} for browsing
