@@ -98,7 +98,7 @@ class BrowseDirectory(_Browse):
         _Browse.__init__(self, parent, tooltip, browse_tooltip, readonly, path)
 
     def _get_filepath(self):
-        fpath = QFileDialog.getExistingDirectory(self, "Open Directory", QString())
+        fpath = QFileDialog.getExistingDirectory(self, "Open Directory", self.path_edit.text())
         if not fpath.isNull():
             return fpath
         return None
