@@ -456,11 +456,6 @@ def run_tests(package_name, gui=False, test_module=None):
     # Can't find a better way to make nose ignore this function :(
     sys.argv.append("--exclude=%s" % ("run_tests",))
 
-    class TestCollector(nose.core.TestCollector):
-        def loadtests(self):
-            for t in self.loader.loadTestsFromDir(os.getcwd()):
-                yield t
-
     try:
         r = nose.run(module=test_module)
     finally:
