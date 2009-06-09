@@ -376,7 +376,7 @@ class BrowseDirectoryMock(QWidgetMock):
         QWidgetMock.__init__(self, *baseargs, **basekwds)
         self.path_edit = QLineEditMock()
 
-    def setPath(self, path):
+    def set_path(self, path):
         self.path_edit.setText(path)
 
 class NumericalLineEditMock(QLineEditMock):
