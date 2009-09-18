@@ -313,6 +313,9 @@ def walkdir(path, errorfunc=None, topdown=True, ignore=None):
 
 @_raise_permissions
 def _copy_file(srcpath, dstpath, callback):
+    if not os.path.exists(srcpath):
+        raise MissingSource(srcpath)
+
     st = os.stat(srcpath)
     sz = float(st.st_size)
     if sz == 0:
@@ -342,6 +345,7 @@ def copy_file(sourcepath, destpath, callback=no_op):
     @param destpath: Destination file path.
     @param callback: Optional callback to be invoked periodically with progress
     status.
+    @raise MissingSource: Source file is missing.
     raise PermissionsError: Missing filesystem permissions.
     """
     _copy_file(sourcepath, destpath, callback)
@@ -381,6 +385,9 @@ def remove_file_or_dir(path, force=False, recurse=True):
         remove_file(path, force=force)
 
 class DestinationExists(SrlError):
+    pass
+
+class MissingSource(SrlError):
     pass
 
 CopyDir_New, CopyDir_Delete, CopyDir_Merge = range(3)
@@ -428,6 +435,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
     destination directory.
     @param copyfile: Optionally supply a custom function for copying individual
     files.
+    @raise MissingSource: The source directory doesn't exist.
     @raise DirectoryExists: The destination directory already exists (and
     mode is CopyDir_New).
     @raise PermissionsError: Missing permission to perform operation.
@@ -447,6 +455,9 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
                 if fnmatch.fnmatch(name, ptrn):
                     names.remove(name)
         return names
+
+    if not os.path.exists(sourcedir):
+        raise MissingSource(sourcedir)
 
     if not os.path.exists(destdir):
         os.makedirs(destdir)
