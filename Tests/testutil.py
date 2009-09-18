@@ -124,6 +124,14 @@ class FileSystemTest(TestCase):
             self.assertRaises(util.PermissionsError, util.copy_dir, dpath0,
                     dpath1, mode=util.CopyDir_Delete)
 
+    def test_copy_dir_missing_source(self):
+        """Test copy_dir with missing source directory."""
+        src_dir = self.__create_dir()
+        util.remove_dir(src_dir)
+        dst_dir = self.__create_dir()
+        self.assertRaises(util.MissingSource, util.copy_dir, src_dir,
+                dst_dir, mode=util.CopyDir_Delete)
+
     def test_copy_dir_delete(self):
         """ Test copying directory after first deleting the destination. """
         srcdir = self.__create_dir()
@@ -192,6 +200,11 @@ class FileSystemTest(TestCase):
         try: txt = f.read()
         finally: f.close()
         self.assertEqual(txt, "Test")
+
+    def test_copy_file_missing(self):
+        src, dst = self._get_tempfname(), self._get_tempfname()
+        os.remove(src)
+        self.assertRaises(util.MissingSource, util.copy_file, src, dst)
 
     def test_create_tempfile(self):
         fname = self.__create_tempfile()
