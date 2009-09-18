@@ -456,8 +456,15 @@ def run_tests(package_name, gui=False, test_module=None):
     # Can't find a better way to make nose ignore this function :(
     sys.argv.append("--exclude=%s" % ("run_tests",))
 
+    if test_module is not None:
+        try: __import__(test_module)
+        except ImportError:
+            _error("Couldn't import test_module ('%s')" % test_module)
+        mod_loc = os.path.dirname(sys.modules[test_module].__file__)
+    else:
+        mod_loc = "."
     try:
-        r = nose.run(module=test_module)
+        r = nose.run(defaultTest=mod_loc)
     finally:
         '''
         if gui:
