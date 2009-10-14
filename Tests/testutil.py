@@ -388,6 +388,12 @@ class FileSystemTest(TestCase):
         self.assertEquals(os.path.splitext(os.path.basename(
                 util.resolve_path("python")))[0], "python")
 
+    if util.get_os_name() == util.Os_Windows:
+        def test_resolve_path_with_ext(self):
+            """Test resolving path to executable with extension in the name."""
+            self.assertEquals(os.path.splitext(os.path.basename(
+                    util.resolve_path("python.exe")))[0], "python")
+
     def test_resolve_path_notfound(self):
         """ Test resolving non-existent executable. """
         self.assertRaises(_srlerror.NotFound, util.resolve_path,
