@@ -737,25 +737,50 @@ def chmod(path, mode, recursive=False):
         _chmod(path)
 
 def resolve_path(executable):
-    """ Resolve name of executable into absolute path.
+    """Resolve name of executable into absolute path.
+
+    On Windows, we will use win32api.FindExecutable if preferable, otherwise
+    we will use the standard algorithm. Note on this platform, though, that if
+    the executable doesn't have one of the possible extensions
+    of an executable, as defined in $PATHEXTS, we will search the path for a
+    combination of the filename and any extension in $PATHEXTS (e.g., .exe).
     @raise NotFound: The executable was not found in path.
     @raise ValueError: An invalid filename was passed.
     """
     if os.path.sep in executable:
         raise ValueError("Invalid filename: %s" % executable)
-    path = os.environ["PATH"].split(os.pathsep)
     if get_os_name() == Os_Windows:    # pragma: optional
-        import win32api, pywintypes
-        try: return win32api.FindExecutable(executable)[1]
-        except pywintypes.error: pass
+        try: import win32api, pywintypes
+        except ImportError: pass
+        else:
+            try: return win32api.FindExecutable(executable)[1]
+            except pywintypes.error: return None
+
+    # Default solution, search path ourselves
+
+    path = os.environ.get("PATH", "").split(os.pathsep)
+    if get_os_name() == Os_Windows:
+        # PATHEXTS tells us which extensions an executable may have
+        path_exts = os.environ.get("PATHEXTS", ".exe;.bat").split(";")
+        has_ext = os.path.splitext(executable)[1] in path_exts
+        if not has_ext:
+            exts = path_exts
+        else:
+            # Don't try to append any extensions
+            exts = [""]
     else:
-        for d in path:
-            try:
-                exepath = os.path.join(d, executable)
+        # General, executables don't have extensions
+        exts = [""]
+    for d in path:
+        try:
+            for ext in exts:
+                print ext
+                exepath = os.path.join(d, executable + ext)
                 if os.access(exepath, os.X_OK):
                     return exepath
-            except OSError:
-                pass
+        except OSError:
+            pass
+
     raise NotFound(executable)
 
 #}
