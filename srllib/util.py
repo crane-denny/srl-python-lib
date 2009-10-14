@@ -774,7 +774,6 @@ def resolve_path(executable):
     for d in path:
         try:
             for ext in exts:
-                print ext
                 exepath = os.path.join(d, executable + ext)
                 if os.access(exepath, os.X_OK):
                     return exepath
