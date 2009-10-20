@@ -93,6 +93,7 @@ def terminate(process):
     
     This method will block until it is determined that the process has in fact
     terminated.
+    @note: On Windows, pywin32 is required.
     @return: The process's exit status.
     """
     r = process.poll()

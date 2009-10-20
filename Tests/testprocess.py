@@ -2,6 +2,7 @@
 import os.path, time, signal
 
 import srllib.process as _process
+from srllib import util
 from _common import *
 
 class TestError(_process.PickleableException):
@@ -13,7 +14,7 @@ def _childfunc_writes(outstr, errstr):
         sys.stderr.write("%s\n" % errstr)
     
 def _childfunc_raises():
-        raise TestError("TestError")
+    raise TestError("TestError")
 
 def _childfunc_sleeps():
     import time
@@ -38,6 +39,11 @@ class ProcessTest(TestCase):
         
     def test_terminate(self):
         """ Test terminating the child process. """
+        if util.get_os_name() == util.Os_Windows:
+            # This method is only usable if pywin32 is installed
+            try: import win32process
+            except ImportError: return
+
         proc = _process.Process(_childfunc_sleeps)
         self.assertEqual(proc.terminate(), -signal.SIGTERM)
         # Make sure that it is safe to call this after the process has exited
