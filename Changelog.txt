@@ -1,3 +1,10 @@
+10.20.2009 - 0.2.0a4
+    * Make util.resolve_path not require pywin32
+    * Fix QAction-related bug 
+    * Fix util.replace_root 
+    * Fix some file/directory copying bugs in util
+    * Update ez_setup
+
 10.17.2008 - 0.2.0a3
     * Revised testing.TestCase._get_privattr semantics
     * Added support for raising exceptions from testing.mock.FunctionMock
@@ -30,3 +37,5 @@
 
 0.0.4:
     * Added utility widgets BrowseFile, BrowseDirectory in qtgui package
+
+vim: set et sts=4 sw=4:
