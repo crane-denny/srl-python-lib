@@ -748,7 +748,6 @@ def resolve_path(executable):
     @raise NotFound: The executable was not found in path.
     @raise ValueError: An invalid filename was passed.
     """
-    print "Finding %s" % executable
     if os.path.sep in executable:
         raise ValueError("Invalid filename: %s" % executable)
     if get_os_name() == Os_Windows:    # pragma: optional
