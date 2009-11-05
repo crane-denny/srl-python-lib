@@ -1,3 +1,5 @@
+    * Better error message from util.replace_root
+
 10.20.2009 - 0.2.0a4
     * Make util.resolve_path not require pywin32
     * Fix QAction-related bug 
