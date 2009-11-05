@@ -748,14 +748,16 @@ def resolve_path(executable):
     @raise NotFound: The executable was not found in path.
     @raise ValueError: An invalid filename was passed.
     """
+    print "Finding %s" % executable
     if os.path.sep in executable:
         raise ValueError("Invalid filename: %s" % executable)
     if get_os_name() == Os_Windows:    # pragma: optional
         try: import win32api, pywintypes
         except ImportError: pass
         else:
-            try: return win32api.FindExecutable(executable)[1]
-            except pywintypes.error: return None
+            try: exepath = win32api.FindExecutable(executable)[1]
+            except pywintypes.error: raise NotFound(executable)
+            return exepath
 
     # Default solution, search path ourselves
 
@@ -781,6 +783,7 @@ def resolve_path(executable):
         except OSError:
             pass
 
+    print "Not found"
     raise NotFound(executable)
 
 #}
