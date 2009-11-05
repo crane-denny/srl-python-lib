@@ -153,7 +153,8 @@ def replace_root(path, new_root, orig_root=None):
     if not orig_root or orig_root[-1] != os.path.sep:
         orig_root += os.path.sep
     if not path.startswith(orig_root):
-        raise ValueError(orig_root)
+        raise ValueError("Path '%s' doesn't start with specified original root '%s'" %
+                (path, orig_root))
 
     relPath = path[len(orig_root):]
     return os.path.join(new_root, relPath)
