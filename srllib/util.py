@@ -782,7 +782,6 @@ def resolve_path(executable):
         except OSError:
             pass
 
-    print "Not found"
     raise NotFound(executable)
 
 #}
