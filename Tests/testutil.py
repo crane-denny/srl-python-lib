@@ -507,6 +507,15 @@ class VariousTest(TestCase):
         self.assertEqual(util.get_os(), (util.get_os_name(),
                 util.get_os_version()))
 
+    def test_get_os_microsoft(self):
+        """Make sure that OS name Microsoft gets handled correctly."""
+        def uname():
+            return "Microsoft", "host", "Windows", "6.1.6000", "", ""
+
+        self._set_module_attr("platform", "uname", uname)
+        self.assertEqual(util.get_os(), (util.Os_Windows, "6.1.6000"))
+
+
 class CommandTest(TestCase):
     """ Test Command class. """
     def test_call(self):

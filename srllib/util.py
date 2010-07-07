@@ -104,6 +104,11 @@ def get_os():
     """
     name, host, rls, ver, mach, proc = platform.uname()
     name = name.lower()
+    if name == "microsoft":
+        # On some Windows versions, it comes out on a different form than usual
+        name = rls.lower()
+        rls = ver
+
     return name, rls
 
 def get_os_name():
