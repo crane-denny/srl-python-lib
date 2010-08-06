@@ -1,7 +1,7 @@
 """ Test the mock module. """
 from srllib.testing.mock import Mock, MockInterfaceError
 
-from _common import *
+from test_testing._common import *
 
 class _Mocked(object):
     @property
