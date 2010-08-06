@@ -56,6 +56,23 @@ class FileSystemTest(TestCase):
         """ Test removing a missing directory. """
         self.assertRaises(ValueError, util.remove_dir, "nosuchdir")
 
+    @only_posix
+    def test_remove_dirsymlinked_dir(self):
+        """Test remove_dir when there's a symlinked subdirectory that's removed before the symlink.
+
+        If there's the subdirectory 'a' and in the same directory a symlink
+        pointing to it, named 'b', remove_dir may remove the directory first
+        thus breaking the symlink. In this case, remove_dir may still think
+        the 'b' is a directory since it originally pointed to one.
+        """
+        dpath = self._get_tempdir()
+        os.mkdir(os.path.join(dpath, "a"))
+        os.symlink("a", os.path.join(dpath, "b"))
+
+        util.remove_dir(dpath)
+        self.assertNot(os.path.exists(dpath))
+        
+
     def test_copy_dir(self):
         """ Test copying a directory.
 

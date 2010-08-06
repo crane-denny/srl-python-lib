@@ -2,6 +2,7 @@
 @var Os_Linux: Identifier for the Linux operating system.
 @var Os_Windows: Identifier the Windows operating system.
 @var Os_Mac: Identifier for the Mac OS operating system.
+OsCollection_Posix: Collection of identifiers for POSIX OSes.
 """
 import stat, shutil, os.path, imp, platform, fnmatch, sys, errno, \
         codecs
@@ -231,7 +232,13 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
         for dpath, dnames, fnames in walkdir(path, topdown=False, errorfunc=
                 handle_err):
             for d in dnames:
-                rmdir(os.path.join(dpath, d))
+                abspath = os.path.join(dpath, d)
+                if not os.path.islink(abspath):
+                    rmdir(abspath)
+                else:
+                    # Better to remove symlinks as files, since it doesn't
+                    # matter if they're broken
+                    remove_file(abspath, force=force)
             for f in fnames:
                 remove_file(os.path.join(dpath, f), force=force)
     else:
