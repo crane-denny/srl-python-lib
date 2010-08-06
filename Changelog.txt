@@ -1,3 +1,6 @@
+08.06.2010 - 0.2.0a5
+    * Fix cornercase with dangling symlink to sibling directory in util.remove_dir 
+    * Handle variation of uname output on Windows
     * Fix util.resolve_path with pywin32
     * Better error message from util.replace_root
 
