@@ -1,0 +1,47 @@
+08.06.2010 - 0.2.0a5
+    * Fix cornercase with dangling symlink to sibling directory in util.remove_dir 
+    * Handle variation of uname output on Windows
+    * Fix util.resolve_path with pywin32
+    * Better error message from util.replace_root
+
+10.20.2009 - 0.2.0a4
+    * Make util.resolve_path not require pywin32
+    * Fix QAction-related bug 
+    * Fix util.replace_root 
+    * Fix some file/directory copying bugs in util
+    * Update ez_setup
+
+10.17.2008 - 0.2.0a3
+    * Revised testing.TestCase._get_privattr semantics
+    * Added support for raising exceptions from testing.mock.FunctionMock
+
+10.13.2008 - 0.2.0a2:
+    * Changed testing package to use nose 0.10 series
+
+07.08.2007 - 0.1.0a3:
+    * Fixed bugs in testing.mock
+    * Significantly expanded upon testing.mock module
+    * New function util.read_file
+
+07.08.2007 - 0.1.0a2:
+    * Cleaned up process module
+    * New Qt helper class StatefulConnection
+
+06.29.2007 - 0.1.0a1:
+    * Added module "process"
+    * Expanded threading module significantly
+
+06.23.2007 - 0.0.7:
+    * Added OS detection support in util module
+    * Fixed source distribution, to include ez_setup.py
+
+06.15.2007 - 0.0.6:
+    * Bundle ez_setup for users lacking setuptools installation
+
+06.15.2007 - 0.0.5:
+    * Use setuptools in setup script
+
+0.0.4:
+    * Added utility widgets BrowseFile, BrowseDirectory in qtgui package
+
+vim: set et sts=4 sw=4:
