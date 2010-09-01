@@ -93,7 +93,7 @@ def get_module(name, path):
 Os_Linux = "linux"
 Os_Windows = "windows"
 Os_Mac = "darwin"
-Os_Solaris = "sun"
+Os_Solaris = "sunos"
 
 OsCollection_Posix = (Os_Linux, Os_Mac, Os_Solaris)
 Os_Posix = OsCollection_Posix   # Backwards-compat
