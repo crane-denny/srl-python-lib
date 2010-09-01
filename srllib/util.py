@@ -475,7 +475,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
 
     if not os.path.exists(destdir):
         os.makedirs(destdir)
-    if platform.system() != "Windows":
+    if get_os_name() != Os_Windows:
         # Won't work on Windows
         shutil.copystat(sourcedir, destdir)
     # We figure out the total number of bytes, for computing progress
@@ -499,7 +499,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
             if os.path.exists(dstpath):
                 remove_file_or_dir(dstpath)
             os.mkdir(dstpath)
-            if platform.system() != "Windows":
+            if get_os_name() != Os_Windows:
                 # Won't work on Windows
                 shutil.copystat(srcpath, dstpath)
             mycallback.start_file(1)
