@@ -375,6 +375,7 @@ class FileSystemTest(TestCase):
                 self._get_tempfname(), content="æøå", encoding="ascii")
 
     def test_replace_root(self):
+        """Test function replace_root."""
         fpath, newroot = self._get_tempfname(), self._get_tempdir()
         self.assertEqual(util.replace_root(fpath, newroot,
                 os.path.dirname(fpath)), os.path.join(newroot,
@@ -385,7 +386,7 @@ class FileSystemTest(TestCase):
         if util.get_os_name() in util.OsCollection_Posix:
             fpath, newroot = "/file", "/tmp/"
         elif util.get_os_name() == util.Os_Windows:
-            fpath, newroot = r"C:\file", r"Z:\\"
+            fpath, newroot = r"C:\file", "Z:\\"
         self.assertEqual(util.replace_root(fpath, newroot), os.path.join(
                 newroot, "file"))
 
@@ -398,6 +399,15 @@ class FileSystemTest(TestCase):
         """Test replace_root with an invalid original root."""
         self.assertRaises(ValueError, util.replace_root, os.path.join("root",
             "file"), "", "badroot")
+
+    if util.get_os_name() == util.Os_Windows:
+        def test_replace_root_unix_pathsep(self):
+            """Test function replace_root with UNIX path separators in path (could cause bug on Windows)."""
+            fpath = r"C:\thisdir/file"
+            newroot = "C:/thatdir"
+            oldroot = os.path.dirname(fpath)
+            self.assertEqual(util.replace_root(fpath, newroot, oldroot),
+                    r"C:\thatdir\file")
 
 
     def test_resolve_path(self):

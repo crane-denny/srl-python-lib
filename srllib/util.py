@@ -142,6 +142,10 @@ def replace_root(path, new_root, orig_root=None):
     @return: The new pathname.
     @raise ValueError: Original root not found in pathname.
     """
+    # Make sure to normalize path, e.g. to convert UNIX-style separators on
+    # Windows
+    path = os.path.normpath(path)
+    new_root = os.path.normpath(new_root)
     if os.path.sep not in path:
         # No directory component
         return path

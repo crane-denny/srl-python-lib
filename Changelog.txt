@@ -1,3 +1,4 @@
+    * util.replace_root: Handle UNIX pathseparators on Windows
     * Add Solaris OS identifier
 
 08.06.2010 - 0.2.0a5
