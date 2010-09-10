@@ -447,7 +447,7 @@ def run_tests(package_name, gui=False, test_module=None):
     @param gui: Do the tests involve GUI code?
     @param test_module: Optionally module containing tests.
     """
-    import optparse, nose.core
+    import nose
 
     if gui:
         import srllib.testing.qtgui, srllib.qtgui
@@ -463,6 +463,13 @@ def run_tests(package_name, gui=False, test_module=None):
         mod_loc = os.path.dirname(sys.modules[test_module].__file__)
     else:
         mod_loc = "."
+
+    # In order to get coverage analysis of all srllib modules, "unload" them before
+    # testing
+    for mname in sys.modules.keys()[:]:
+        if mname.split(".")[0] == "srllib":
+            del sys.modules[mname]
+
     try:
         r = nose.run(defaultTest=mod_loc)
     finally:
