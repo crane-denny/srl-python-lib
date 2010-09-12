@@ -10,3 +10,4 @@ setup.cfg
 \.settings
 \.coverage
 .*~
+coverage.conf
