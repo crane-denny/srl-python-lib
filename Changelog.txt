@@ -1,3 +1,4 @@
+11.16.2010 - 0.4.0
     * Use distribute instead of setuptools in setup.py
 
 09.07.2010 - 0.3.0
