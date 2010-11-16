@@ -1,3 +1,5 @@
+    * Use distribute instead of setuptools in setup.py
+
 09.07.2010 - 0.3.0
     * util.replace_root: Handle UNIX pathseparators on Windows
     * Add Solaris OS identifier
