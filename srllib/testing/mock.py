@@ -149,6 +149,9 @@ class Mock(object):
             for name, prop in mockprops.items():
                 if name.startswith("mock"):
                     continue
+                # Ignore certain special attributes
+                if name in ["__weakref__"]:
+                    continue
                 if name not in realprops:
                     raise MockInterfaceError("'%s' is not a property of '%s'" %
                             (name, realClass))
