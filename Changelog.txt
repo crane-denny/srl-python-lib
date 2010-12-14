@@ -1,3 +1,4 @@
+12.14.2010 - 0.4.2
     * testing.mock: Ignore __weakref__ in class interfaces
 
 11.16.2010 - 0.4.1
