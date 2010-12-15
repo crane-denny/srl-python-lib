@@ -1,3 +1,6 @@
+12.15.2010 - 0.4.3
+    * Use MANIFEST.in to include distribute_setup.py
+
 12.14.2010 - 0.4.2
     * testing.mock: Ignore __weakref__ in class interfaces
 

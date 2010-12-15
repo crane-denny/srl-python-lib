@@ -13,6 +13,5 @@ setup(name="SRL Python Library",
         author_email="arvenk@simula.no",
         url="http://code.google.com/p/srl-python-lib",
         license=srllib.__license__,
-        py_modules=["distribute_setup",],
         packages=find_packages(exclude=["Tests"]),
         **extra_kwds)
