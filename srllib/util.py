@@ -487,7 +487,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
 
         if fs_mode is None:
             # Only copy if mode isn't already specified
-            shutil.copystat(srcpath, dstpath)
+            shutil.copystat(src, dst)
 
     if not os.path.exists(sourcedir):
         raise MissingSource(sourcedir)
