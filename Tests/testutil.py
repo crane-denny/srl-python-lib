@@ -211,16 +211,17 @@ class FileSystemTest(TestCase):
     def test_copy_dir_fs_mode(self):
         """Test copy_dir with specific fs_mode argument."""
         srcdir, dstdir = self._get_tempdir(), self._get_tempdir()
-        fpath = os.path.join(srcdir, "test")
-        util.create_file(fpath, "Test")
+        util.create_file(os.path.join(srcdir, "test"), "Test")
 
-        # This is a mode that'll work both on Unix and Windows (at least for
-        # files)
-        fs_mode = 0666
+        if util.get_os_name() != Os_Windows:
+            fs_mode = 0755
+        else:
+            # This is a mode that'll work well on Windows for files
+            fs_mode = 0666
         util.copy_dir(srcdir, dstdir, mode=util.CopyDir_Delete,
                 fs_mode=fs_mode)
 
-        pathnames = [fpath]
+        pathnames = [os.path.join(dstdir, "test")]
         if util.get_os_name() != Os_Windows:
             # It's very restricted which permissions we can set on Windows directories
             pathnames.append(dstdir)
