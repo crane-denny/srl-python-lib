@@ -330,7 +330,7 @@ def walkdir(path, errorfunc=None, topdown=True, ignore=None):
         yield path, dnames, fnames
 
 @_raise_permissions
-def _copy_file(srcpath, dstpath, callback):
+def _copy_file(srcpath, dstpath, callback, fs_mode=None):
     if not os.path.exists(srcpath):
         raise MissingSource(srcpath)
 
@@ -355,18 +355,22 @@ def _copy_file(srcpath, dstpath, callback):
             src.close()
             dst.close()
 
-    shutil.copystat(srcpath, dstpath)
+    if fs_mode is None:
+        shutil.copystat(srcpath, dstpath)
+    else:
+        chmod(dstpath, fs_mode)
 
-def copy_file(sourcepath, destpath, callback=no_op):
+def copy_file(sourcepath, destpath, callback=no_op, fs_mode=None):
     """ Copy a file.
     @param sourcepath: Source file path.
     @param destpath: Destination file path.
     @param callback: Optional callback to be invoked periodically with progress
     status.
+    @param fs_mode: Optionally, specify mode to create destination file with.
     @raise MissingSource: Source file is missing.
     raise PermissionsError: Missing filesystem permissions.
     """
-    _copy_file(sourcepath, destpath, callback)
+    _copy_file(sourcepath, destpath, callback, fs_mode=fs_mode)
 
 @_raise_permissions
 def remove_file(path, force=False):
@@ -430,7 +434,7 @@ class _CopyDirCallback:
 
 @_raise_permissions
 def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
-    copyfile=None):
+        copyfile=None, fs_mode=None):
     """ Copy a directory and its contents.
 
     Custom File Copying
@@ -453,6 +457,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
     destination directory.
     @param copyfile: Optionally supply a custom function for copying individual
     files.
+    @param fs_mode: The numeric mode to create files/directories with.
     @raise MissingSource: The source directory doesn't exist.
     @raise DirectoryExists: The destination directory already exists (and
     mode is CopyDir_New).
@@ -474,14 +479,27 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
                     names.remove(name)
         return names
 
+    def update_mode(src, dst):
+        """Potentially copy mode from source to destination."""
+        if get_os_name() == Os_Windows:
+            # Won't work on Windows
+            return
+
+        if fs_mode is None:
+            # Only copy if mode isn't already specified
+            shutil.copystat(srcpath, dstpath)
+
     if not os.path.exists(sourcedir):
         raise MissingSource(sourcedir)
 
+    mkdir_kwds = {}
+
     if not os.path.exists(destdir):
-        os.makedirs(destdir)
-    if get_os_name() != Os_Windows:
-        # Won't work on Windows
-        shutil.copystat(sourcedir, destdir)
+        if fs_mode is not None:
+            mkdir_kwds["mode"] = fs_mode
+        os.makedirs(destdir, **mkdir_kwds)
+    update_mode(sourcedir, destdir)
+
     # We figure out the total number of bytes, for computing progress
     allbytes = 0
     for dpath, dnames, fnames in walkdir(sourcedir):
@@ -502,10 +520,8 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
             dstpath = replace_root(srcpath, destdir, sourcedir)
             if os.path.exists(dstpath):
                 remove_file_or_dir(dstpath)
-            os.mkdir(dstpath)
-            if get_os_name() != Os_Windows:
-                # Won't work on Windows
-                shutil.copystat(srcpath, dstpath)
+            os.mkdir(dstpath, **mkdir_kwds)
+            update_mode(srcpath, dstpath)
             mycallback.start_file(1)
             mycallback(100)
             mycallback.end_file()
@@ -520,7 +536,7 @@ def copy_dir(sourcedir, destdir, callback=no_op, ignore=[], mode=CopyDir_New,
                 continue
 
             mycallback.start_file(os.lstat(srcpath).st_size)
-            copyfile(srcpath, dstpath, mycallback)
+            copyfile(srcpath, dstpath, mycallback, fs_mode=fs_mode)
             mycallback.end_file()
 
 def create_tempfile(suffix="", prefix="tmp", close=True, content=None,
