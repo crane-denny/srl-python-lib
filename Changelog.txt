@@ -1,3 +1,5 @@
+    * srllib.util: add argument 'fs_mode' to copy_dir and copy_file
+
 12.15.2010 - 0.4.3
     * Use MANIFEST.in to include distribute_setup.py
 

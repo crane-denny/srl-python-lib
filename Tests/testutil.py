@@ -179,7 +179,7 @@ class FileSystemTest(TestCase):
 
     def test_copy_dir_writefile(self):
         """ Test passing a custom writefile function to copy_dir. """
-        def copyfile(src, dst, callback):
+        def copyfile(src, dst, callback, **kwds):
             self.__invoked = True
             callback(50.0)
             callback(100.0)
@@ -207,6 +207,28 @@ class FileSystemTest(TestCase):
                 "Symlink dereferenced")
             self.assertEqual(os.readlink(os.path.join(dstdir, "sym")), "test",
                 "Symlink not copied correctly")
+
+    def test_copy_dir_fs_mode(self):
+        """Test copy_dir with specific fs_mode argument."""
+        srcdir, dstdir = self._get_tempdir(), self._get_tempdir()
+        fpath = os.path.join(srcdir, "test")
+        util.create_file(fpath, "Test")
+
+        # This is a mode that'll work both on Unix and Windows (at least for
+        # files)
+        fs_mode = 0666
+        util.copy_dir(srcdir, dstdir, mode=util.CopyDir_Delete,
+                fs_mode=fs_mode)
+
+        pathnames = [fpath]
+        if util.get_os_name() != Os_Windows:
+            # It's very restricted which permissions we can set on Windows directories
+            pathnames.append(dstdir)
+        for pathname in pathnames:
+            got_mode = stat.S_IMODE(os.lstat(pathname).st_mode)
+            self.assertEqual(got_mode, fs_mode,
+                    "Mode not correctly set on '%s' (%o)" % (pathname,
+                        got_mode))
 
     def test_copy_file(self):
         src, dst = self._get_tempfile(), self._get_tempfname()
@@ -270,7 +292,6 @@ class FileSystemTest(TestCase):
         else:
             self.assertEqual(filemode, 0)
             self.assertEqual(dirmode, 0)
-        print "Testing"
 
     def test_chmod_recursive(self):
         """ Test chmod in recursive mode. """
