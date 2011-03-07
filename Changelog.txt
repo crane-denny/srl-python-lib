@@ -1,3 +1,4 @@
+03.07.2011 - 0.5.0
     * srllib.util: add argument 'fs_mode' to copy_dir and copy_file
 
 12.15.2010 - 0.4.3
