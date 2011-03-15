@@ -1,3 +1,6 @@
+    * srllib.util: make remove_dir only chmod directory itself and its
+    children in force mode
+    * srllib.util: make remove_file only chmod file itself in force mode
     * srllib.util: make replace_root return purely relative paths (i.e., no
     preceding './')
     * srllib.util: fix bug when calling remove_dir on relative directory in force_mode

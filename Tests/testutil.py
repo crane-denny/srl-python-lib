@@ -48,6 +48,7 @@ class FileSystemTest(TestCase):
     def test_remove_dir_force(self):
         """Test removing directory with read-only contents."""
         dpath = self.__create_dir()
+        # Make the directory and its contents read-only
         util.chmod(dpath, 0, recursive=True)
         util.remove_dir(dpath, force=True)
         self.assertNot(os.path.exists(dpath))
@@ -64,13 +65,22 @@ class FileSystemTest(TestCase):
         util.remove_dir(dpath_rel, force=True)
         self.assertNot(os.path.exists(dpath))
 
+    @only_posix
+    def test_remove_dir_force_ro_parent(self):
+        """Test attempting to forcefully remove directory with read-only parent."""
+        dpath = self.__create_dir()
+        # Make read-only
+        util.chmod(dpath, 0555)
+        self.assertRaises(util.PermissionsError, util.remove_dir,
+                os.path.join(dpath, "testdir"), force=True)
+
 
     def test_remove_dir_missing(self):
         """ Test removing a missing directory. """
         self.assertRaises(ValueError, util.remove_dir, "nosuchdir")
 
     @only_posix
-    def test_remove_dirsymlinked_dir(self):
+    def test_remove_dir_symlinked_dir(self):
         """Test remove_dir when there's a symlinked subdirectory that's removed before the symlink.
 
         If there's the subdirectory 'a' and in the same directory a symlink
@@ -366,7 +376,8 @@ class FileSystemTest(TestCase):
         """ Test removing a read-only file forcefully. """
         dpath = self.__create_dir()
         fpath = os.path.join(dpath, "test")
-        util.chmod(dpath, stat.S_IEXEC | stat.S_IREAD, recursive=True)
+        # Make the file read-only
+        util.chmod(fpath, stat.S_IEXEC | stat.S_IREAD, recursive=True)
         util.remove_file(fpath, force=True)
         self.assertNot(os.path.exists(fpath))
 
