@@ -201,33 +201,19 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
     @raise PermissionsError: Missing file-permissions.
     @raise DirNotEmpty: Directory was not empty, and recurse was not specified.
     """
-    def rmdir(path, root=False):
-        chmodded = None
-        # When in force mode, make the parent directory writeable if necessary
-        # (but leave the parent of the root directory to be deleted be)
-        if force and not root:
-            if get_os_name() == Os_Windows:
-                mode = get_file_permissions(path)
-                if not mode & stat.S_IWRITE:
-                    mode |= stat.S_IWRITE
+    def rmdir(path):
+        if force:
+            # When in force mode, make the directory writeable if necessary
+            mode = get_file_permissions(path)
+            if not mode & stat.S_IWRITE:
+                mode |= stat.S_IWRITE
                 chmod(path, mode)
-            elif get_os_name() in OsCollection_Posix:
-                # On POSIX, the permissions of the containing directory matter
-                # when deleting
-                print "Removing {}".format(path)
-                old_mode = get_file_permissions(os.path.dirname(path))
-                if not old_mode & stat.S_IWRITE:
-                    chmodded = os.path.dirname(path)
-                    chmod(chmodded, old_mode | stat.S_IWRITE)
-        try:
-            assert not os.listdir(path), os.listdir(path)
-            try: os.rmdir(path)
-            except OSError:
-                if not ignore_errors:
-                    raise
-        finally:
-            if chmodded:
-                chmod(chmodded, old_mode)
+
+        assert not os.listdir(path), os.listdir(path)
+        try: os.rmdir(path)
+        except OSError:
+            if not ignore_errors:
+                raise
 
     def handle_err(dpath):
         if not force:
@@ -241,6 +227,14 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
     if recurse:
         for dpath, dnames, fnames in walkdir(path, topdown=False, errorfunc=
                 handle_err):
+            if force:
+                # Make the directory writeable if necessary -- on Unix you
+                # can't delete children of read-only directories
+                mode = get_file_permissions(dpath)
+                if not mode & stat.S_IWRITE:
+                    mode |= stat.S_IWRITE
+                    chmod(dpath, mode)
+            
             for d in dnames:
                 abspath = os.path.join(dpath, d)
                 if not os.path.islink(abspath):
@@ -254,7 +248,7 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
     else:
         if os.listdir(path):
             raise DirNotEmpty
-    rmdir(path, root=True)
+    rmdir(path)
 
 @_raise_permissions
 def get_file_permissions(path):
@@ -383,21 +377,13 @@ def remove_file(path, force=False):
     @param force: Force deletion of read-only file?
     @raise PermissionsError: Missing file-permissions.
     """
-    chmodded = None
     if force:
-        if get_os_name() == Os_Windows:
-            chmod(path, stat.S_IWRITE)
-        elif get_os_name() in OsCollection_Posix:
-            # On POSIX, directory permissions matter
-            dpath = os.path.dirname(path)
-            old_mode = get_file_permissions(dpath)
-            chmodded = dpath
-            chmod(dpath, old_mode | stat.S_IWRITE)
+        # Make the necessary file/directory writeable if it isn't already
+        old_mode = get_file_permissions(path)
+        if not old_mode & stat.S_IWRITE:
+            chmod(path, old_mode | stat.S_IWRITE)
 
-    try: os.remove(path)
-    finally:
-        if chmodded:
-            chmod(chmodded, old_mode)
+    os.remove(path)
 
 def remove_file_or_dir(path, force=False, recurse=True):
     """ Remove a filesystem object, whether it is a file or a directory.
