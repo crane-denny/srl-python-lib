@@ -1,3 +1,4 @@
+03.15.2011 - 0.5.1
     * srllib.util: make remove_dir only chmod directory itself and its
     children in force mode
     * srllib.util: make remove_file only chmod file itself in force mode
