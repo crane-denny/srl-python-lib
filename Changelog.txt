@@ -1,3 +1,7 @@
+    * srllib.util: make replace_root return purely relative paths (i.e., no
+    preceding './')
+    * srllib.util: fix bug when calling remove_dir on relative directory in force_mode
+
 03.07.2011 - 0.5.0
     * srllib.util: add argument 'fs_mode' to copy_dir and copy_file
 

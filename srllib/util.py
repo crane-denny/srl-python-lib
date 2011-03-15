@@ -145,7 +145,9 @@ def replace_root(path, new_root, orig_root=None):
     # Make sure to normalize path, e.g. to convert UNIX-style separators on
     # Windows
     path = os.path.normpath(path)
-    new_root = os.path.normpath(new_root)
+    # If the new root is empty, leave it be
+    if new_root:
+        new_root = os.path.normpath(new_root)
     if os.path.sep not in path:
         # No directory component
         return path
@@ -199,9 +201,11 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
     @raise PermissionsError: Missing file-permissions.
     @raise DirNotEmpty: Directory was not empty, and recurse was not specified.
     """
-    def rmdir(path):
+    def rmdir(path, root=False):
         chmodded = None
-        if force:
+        # When in force mode, make the parent directory writeable if necessary
+        # (but leave the parent of the root directory to be deleted be)
+        if force and not root:
             if get_os_name() == Os_Windows:
                 mode = get_file_permissions(path)
                 if not mode & stat.S_IWRITE:
@@ -210,6 +214,7 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
             elif get_os_name() in OsCollection_Posix:
                 # On POSIX, the permissions of the containing directory matter
                 # when deleting
+                print "Removing {}".format(path)
                 old_mode = get_file_permissions(os.path.dirname(path))
                 if not old_mode & stat.S_IWRITE:
                     chmodded = os.path.dirname(path)
@@ -249,7 +254,7 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
     else:
         if os.listdir(path):
             raise DirNotEmpty
-    rmdir(path)
+    rmdir(path, root=True)
 
 @_raise_permissions
 def get_file_permissions(path):

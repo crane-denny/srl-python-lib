@@ -46,11 +46,24 @@ class FileSystemTest(TestCase):
         self.assertNot(os.path.exists(dpath))
 
     def test_remove_dir_force(self):
-        """ Test removing directory with read-only contents. """
+        """Test removing directory with read-only contents."""
         dpath = self.__create_dir()
         util.chmod(dpath, 0, recursive=True)
         util.remove_dir(dpath, force=True)
         self.assertNot(os.path.exists(dpath))
+
+    def test_remove_dir_force_relative(self):
+        """Test removing directory forcefully with relative path."""
+        dpath = self.__create_dir()
+        dpath_parent = os.path.dirname(dpath)
+        os.chdir(dpath_parent)
+        dpath_rel = util.replace_root(dpath, "", dpath_parent)
+        # Make sure it's a pure relative path, i.e. it doesn't start with ./
+        assert not dpath_rel.startswith(".")
+
+        util.remove_dir(dpath_rel, force=True)
+        self.assertNot(os.path.exists(dpath))
+
 
     def test_remove_dir_missing(self):
         """ Test removing a missing directory. """
@@ -421,6 +434,11 @@ class FileSystemTest(TestCase):
         """Test replace_root with an invalid original root."""
         self.assertRaises(ValueError, util.replace_root, os.path.join("root",
             "file"), "", "badroot")
+
+    def test_replace_root_relative(self):
+        """Test replace_root so the result is relative."""
+        self.assertEqual(util.replace_root(os.path.join("dir", "file"), "",
+            "dir"), "file")
 
     if util.get_os_name() == util.Os_Windows:
         def test_replace_root_unix_pathsep(self):
