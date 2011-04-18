@@ -18,7 +18,6 @@ setup(name="srllib",
         classifiers=[
             'Development Status :: 5 - Production/Stable',
             'Intended Audience :: Developers',
-            'Operating System :: All',
             'Programming Language :: Python :: 2',
             'Topic :: Software Development :: Libraries',
             ],
