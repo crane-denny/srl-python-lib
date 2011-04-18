@@ -13,5 +13,12 @@ setup(name="srllib",
         author_email="arve.knudsen@gmail.com",
         url="http://code.google.com/p/srl-python-lib",
         license=srllib.__license__,
+        'classifiers': [
+            'Development Status :: 5 - Production/Stable',
+            'Intended Audience :: Developers',
+            'Operating System :: All',
+            'Programming Language :: Python :: 2',
+            'Topic :: Software Development :: Libraries',
+            ],
         packages=find_packages(exclude=["Tests"]),
         **extra_kwds)
