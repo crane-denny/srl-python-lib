@@ -13,7 +13,7 @@ setup(name="srllib",
         author_email="arve.knudsen@gmail.com",
         url="http://code.google.com/p/srl-python-lib",
         license=srllib.__license__,
-        'classifiers': [
+        classifiers=[
             'Development Status :: 5 - Production/Stable',
             'Intended Audience :: Developers',
             'Operating System :: All',
