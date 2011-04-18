@@ -1,3 +1,4 @@
+03.15.2011 - 0.5.2
     * Update distribution metadata
     * Change distribution name to 'srllib' for simplicity
 
