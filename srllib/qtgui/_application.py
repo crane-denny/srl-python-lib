@@ -28,7 +28,7 @@ class Application(QApplication):
     if main thread).
     """
     import srllib.signal
-    sig_quitting = srllib.signal.Signal()
+    sig_quitting = Signal()
     the_app = None
 
     def __init__(self, argv=None, catch_exceptions=True):

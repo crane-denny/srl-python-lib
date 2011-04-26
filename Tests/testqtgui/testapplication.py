@@ -1,9 +1,11 @@
 """ Test QApplication wrapper. """
-from srllib.qtgui import Application
-from PyQt4.QtCore import QTimer
-
 from _common import *
 
+if has_qt4:
+    from srllib.qtgui import Application
+    from PyQt4.QtCore import QTimer
+
+@only_qt4
 class ApplicationTest(TestCase):
     def test_set_excepthook(self):
         def exchook(exc, value, tb, threadname):

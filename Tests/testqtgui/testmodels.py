@@ -1,8 +1,10 @@
 from testqtgui._common import *
 
-import srllib.qtgui.util
-from srllib.qtgui import models
+if has_qt4:
+    import srllib.qtgui.util
+    from srllib.qtgui import models
 
+@only_qt4
 class UndoItemModelTest(QtTestCase):
     def test_construct(self):
         model = self.__construct()

@@ -1,19 +1,23 @@
-""" Test util module. """
-from testqtgui._common import *
+"""Test util module."""
+from _common import *
+if has_qt4:
+    from testqtgui._common import *
 
-from srllib.qtgui import util
+    from srllib.qtgui import util
 
-class _TestCommand(QtGui.QUndoCommand):
-    def __init__(self):
-        QtGui.QUndoCommand.__init__(self)
-        self.done = False
+if has_qt4:
+    class _TestCommand(QtGui.QUndoCommand):
+        def __init__(self):
+            QtGui.QUndoCommand.__init__(self)
+            self.done = False
 
-    def redo(self):
-        self.done = True
+        def redo(self):
+            self.done = True
 
-    def undo(self):
-        pass
+        def undo(self):
+            pass
 
+@only_qt4
 class UndoStackTest(TestCase):
     def test_construct(self):
         stack = util.UndoStack()
@@ -51,6 +55,7 @@ class UndoStackTest(TestCase):
         else:
             self.assertEqual(stack.count(), count)
 
+@only_qt4
 class VariousTest(QtTestCase):
     def test_Action(self):
         """ Test Action factory. """
@@ -68,13 +73,15 @@ class VariousTest(QtTestCase):
         self.assert_(self.__called)
 
 
-class _BrowseFile(util._BrowseHelper, guimocks.QWidgetMock):
-    def __init__(self, *args, **kwds):
-        guimocks.QWidgetMock.__init__(self)
-        self.path_edit = guimocks.QLineEditMock()
-        util._BrowseHelper.__init__(self, *args, **kwds)
+if has_qt4:
+    class _BrowseFile(util._BrowseHelper, guimocks.QWidgetMock):
+        def __init__(self, *args, **kwds):
+            guimocks.QWidgetMock.__init__(self)
+            self.path_edit = guimocks.QLineEditMock()
+            util._BrowseHelper.__init__(self, *args, **kwds)
 
 
+@only_qt4
 class BrowseHelperTest(QtTestCase):
     def test_construct(self):
         browse = self.__test_construct()
