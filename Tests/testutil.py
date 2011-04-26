@@ -18,12 +18,12 @@ class FileSystemTest(TestCase):
         try: src.write("Test")
         finally: src.close()
 
-        if util.get_os()[0] == util.Os_Windows:
+        if util.get_os()[0] == Os_Windows:
             util.chmod(dst, 0)
         else:
             util.chmod(dstDir, 0)
         self.assertRaises(util.PermissionsError, util.move_file, src.name, dst)
-        if util.get_os()[0] == util.Os_Windows:
+        if util.get_os()[0] == Os_Windows:
             util.chmod(dst, 0700)
         else:
             util.chmod(dstDir, 0700)
@@ -113,7 +113,7 @@ class FileSystemTest(TestCase):
 
         os.mkdir(os.path.join(dstDir, "testdir"))
         # Remove only write permission
-        if util.get_os()[0] == util.Os_Windows:
+        if util.get_os()[0] == Os_Windows:
             util.chmod(os.path.join(dstDir, "testdir"), 0500)
         else:
             util.chmod(dstDir, 0500)
@@ -124,7 +124,7 @@ class FileSystemTest(TestCase):
         # deletion
         self.assertRaises(util.PermissionsError, util.copy_dir, dpath,
                 os.path.join(dstDir, "testdir"), mode=util.CopyDir_Delete)
-        if util.get_os()[0] == util.Os_Windows:
+        if util.get_os()[0] == Os_Windows:
             util.chmod(os.path.join(dstDir, "testdir"), 0700)
         else:
             util.chmod(dstDir, 0700)
@@ -148,7 +148,7 @@ class FileSystemTest(TestCase):
     def test_copy_dir_noperm(self):
         """ Test copying a directory with missing permissions. """
         dpath0, dpath1 = self.__create_dir(), self._get_tempdir()
-        if util.get_os()[0] != util.Os_Windows:
+        if util.get_os()[0] != Os_Windows:
             # Can't remove read permission on Windows
             util.chmod(dpath0, 0)
             self.assertRaises(util.PermissionsError, util.copy_dir, dpath0,
@@ -219,7 +219,7 @@ class FileSystemTest(TestCase):
         self.assertEqual(self.__progress, [0, 50.0, 100.0],
             "Wrong progress: %r" % self.__progress)
 
-    if util.get_os_name() in util.OsCollection_Posix:
+    if get_os_name() in OsCollection_Posix:
         def test_copy_dir_symlink(self):
             """ Test copying directory with symlink. """
             srcdir, dstdir = self._get_tempdir(), self._get_tempdir()
@@ -236,7 +236,7 @@ class FileSystemTest(TestCase):
         srcdir, dstdir = self._get_tempdir(), self._get_tempdir()
         util.create_file(os.path.join(srcdir, "test"), "Test")
 
-        if util.get_os_name() != Os_Windows:
+        if get_os_name() != Os_Windows:
             fs_mode = 0755
         else:
             # This is a mode that'll work well on Windows for files
@@ -245,7 +245,7 @@ class FileSystemTest(TestCase):
                 fs_mode=fs_mode)
 
         pathnames = [os.path.join(dstdir, "test")]
-        if util.get_os_name() != Os_Windows:
+        if get_os_name() != Os_Windows:
             # It's very restricted which permissions we can set on Windows directories
             pathnames.append(dstdir)
         for pathname in pathnames:
@@ -298,7 +298,7 @@ class FileSystemTest(TestCase):
         dpath = self.__create_dir()
         util.chmod(dpath, 0)
         mode = stat.S_IMODE(os.stat(dpath).st_mode)
-        if util.get_os()[0] == util.Os_Windows:
+        if util.get_os()[0] == Os_Windows:
             # Impossible to remove rx permissions on Windows
             self.assertNot(mode & stat.S_IWRITE)
         else:
@@ -310,7 +310,7 @@ class FileSystemTest(TestCase):
         util.chmod(dpath, 0700)
         filemode = stat.S_IMODE(os.stat(os.path.join(dpath, "test")).st_mode)
         dirmode = stat.S_IMODE(os.stat(os.path.join(dpath, "testdir")).st_mode)
-        if util.get_os()[0] == util.Os_Windows:
+        if util.get_os()[0] == Os_Windows:
             self.assertNot(filemode & (stat.S_IWRITE | stat.S_IEXEC))
             self.assertNot(dirmode & stat.S_IWRITE)
         else:
@@ -325,7 +325,7 @@ class FileSystemTest(TestCase):
         # Set executable so the directory can be traversed
         mode = stat.S_IREAD | stat.S_IEXEC
         util.chmod(dpath, mode, True)
-        if util.get_os_name() == util.Os_Windows:
+        if get_os_name() == Os_Windows:
             # Some permissions can't be turned off on Windows ..
             dirmode = mode | (stat.S_IROTH | stat.S_IXOTH | stat.S_IRGRP | stat.S_IXGRP)
             fmode = stat.S_IREAD | stat.S_IROTH | stat.S_IRGRP
@@ -360,12 +360,12 @@ class FileSystemTest(TestCase):
     def test_remove_file(self):
         dpath = self._get_tempdir()
         fpath = util.create_file(os.path.join(dpath, "test"))
-        if util.get_os()[0] == util.Os_Windows:
+        if util.get_os()[0] == Os_Windows:
             util.chmod(fpath, 0)
         else:
             util.chmod(dpath, 0)
         self.assertRaises(util.PermissionsError, util.remove_file, fpath)
-        if util.get_os()[0] == util.Os_Windows:
+        if util.get_os()[0] == Os_Windows:
             util.chmod(fpath, 0700)
         else:
             util.chmod(dpath, 0700)
@@ -389,8 +389,8 @@ class FileSystemTest(TestCase):
         self.assertNot(os.path.exists(fpath))
 
     def test_get_os(self):
-        self.assertIn(srllib.util.get_os()[0], (srllib.util.Os_Linux,
-                srllib.util.Os_Windows, srllib.util.Os_Mac))
+        self.assertIn(srllib.util.get_os()[0], (Os_Linux,
+                Os_Windows, Os_Mac))
 
     def test_create_file_unicode(self):
         """ Test creating file with unicode content. """
@@ -429,9 +429,9 @@ class FileSystemTest(TestCase):
 
     def test_replace_root_default(self):
         """ Test replace_root with default original root. """
-        if util.get_os_name() in util.OsCollection_Posix:
+        if get_os_name() in OsCollection_Posix:
             fpath, newroot = "/file", "/tmp/"
-        elif util.get_os_name() == util.Os_Windows:
+        elif get_os_name() == Os_Windows:
             fpath, newroot = r"C:\file", "Z:\\"
         self.assertEqual(util.replace_root(fpath, newroot), os.path.join(
                 newroot, "file"))
@@ -451,7 +451,7 @@ class FileSystemTest(TestCase):
         self.assertEqual(util.replace_root(os.path.join("dir", "file"), "",
             "dir"), "file")
 
-    if util.get_os_name() == util.Os_Windows:
+    if get_os_name() == Os_Windows:
         def test_replace_root_unix_pathsep(self):
             """Test function replace_root with UNIX path separators in path (could cause bug on Windows)."""
             fpath = r"C:\thisdir/file"
@@ -466,7 +466,7 @@ class FileSystemTest(TestCase):
         self.assertEquals(os.path.splitext(os.path.basename(
                 util.resolve_path("python")))[0], "python")
 
-    if util.get_os_name() == util.Os_Windows:
+    if get_os_name() == Os_Windows:
         def test_resolve_path_with_ext(self):
             """Test resolving path to executable with extension in the name."""
             self.assertEquals(os.path.splitext(os.path.basename(
@@ -576,13 +576,13 @@ class VariousTest(TestCase):
         self.assertRaises(ValueError, util.get_module, "missing", dpath)
 
     def test_get_os_name(self):
-        self.assertIn(util.get_os_name(), (util.Os_Windows, util.Os_Linux, util.Os_Mac))
+        self.assertIn(get_os_name(), (Os_Windows, Os_Linux, Os_Mac))
 
     def test_get_os_version(self):
         util.get_os_version()
 
     def test_get_os(self):
-        self.assertEqual(util.get_os(), (util.get_os_name(),
+        self.assertEqual(util.get_os(), (get_os_name(),
                 util.get_os_version()))
 
     def test_get_os_microsoft(self):
@@ -591,7 +591,7 @@ class VariousTest(TestCase):
             return "Microsoft", "host", "Windows", "6.1.6000", "", ""
 
         self._set_module_attr("platform", "uname", uname)
-        self.assertEqual(util.get_os(), (util.Os_Windows, "6.1.6000"))
+        self.assertEqual(util.get_os(), (Os_Windows, "6.1.6000"))
 
 
 class CommandTest(TestCase):

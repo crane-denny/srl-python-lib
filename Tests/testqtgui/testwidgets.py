@@ -1,21 +1,25 @@
-from PyQt4 import QtGui, QtCore
-from PyQt4.QtCore import Qt
+from _common import *
 
-from testqtgui._common import *
+if has_qt4:
+    from PyQt4 import QtGui, QtCore
+    from PyQt4.QtCore import Qt
 
-import srllib.qtgui.widgets
+    import srllib.qtgui.widgets
 
-class _LineEdit(srllib.qtgui.widgets._LineEditHelper, guimocks.QLineEditMock):
-    _qbase = __qbase = guimocks.QLineEditMock
+if has_qt4:
+    class _LineEdit(srllib.qtgui.widgets._LineEditHelper,
+            guimocks.QLineEditMock):
+        _qbase = __qbase = guimocks.QLineEditMock
 
-    def __init__(self, contents="", undo_stack=None, undo_text=None, pos=None):
-        self.__qbase.__init__(self, returnValues={"text": contents})
-        srllib.qtgui.widgets._LineEditHelper.__init__(self, undo_stack,
-                undo_text, self.__qbase)
-        if pos is None:
-            pos = len(contents) + 1
-        self.setCursorPosition(pos)
+        def __init__(self, contents="", undo_stack=None, undo_text=None, pos=None):
+            self.__qbase.__init__(self, returnValues={"text": contents})
+            srllib.qtgui.widgets._LineEditHelper.__init__(self, undo_stack,
+                    undo_text, self.__qbase)
+            if pos is None:
+                pos = len(contents) + 1
+            self.setCursorPosition(pos)
 
+@only_qt4
 class LineEditTest(QtTestCase):
     def test_construct_with_undo(self):
         """ Test constructing with undo. """
@@ -70,8 +74,10 @@ class LineEditTest(QtTestCase):
         edit.emit(QtCore.SIGNAL("textEdited(const QString&)"), "Text")
         self.assertEqual(edit.cursorPosition(), 1)
 
-    def __construct(self, contents=QtCore.QString(), undo=False,
+    def __construct(self, contents=None, undo=False,
             undo_text=None, pos=None):
+        if contents is None:
+            contents = QtCore.QString()
         if undo:
             undo_stack = QtGui.QUndoStack()
         edit = _LineEdit(contents, undo_stack=undo_stack, undo_text=undo_text,
@@ -80,15 +86,17 @@ class LineEditTest(QtTestCase):
             return edit
         return edit, undo_stack
 
-class _NumericalLineEdit(srllib.qtgui.widgets._NumericalLineEditHelper,
-    _LineEdit):
-    _qbase = _LineEdit
+if has_qt4:
+    class _NumericalLineEdit(srllib.qtgui.widgets._NumericalLineEditHelper,
+        _LineEdit):
+        _qbase = _LineEdit
 
-    def __init__(self, floating_point, contents, minimum, maximum):
-        self._qbase.__init__(self, contents=contents)
-        srllib.qtgui.widgets._NumericalLineEditHelper.__init__(self,
-            floating_point, minimum, maximum)
+        def __init__(self, floating_point, contents, minimum, maximum):
+            self._qbase.__init__(self, contents=contents)
+            srllib.qtgui.widgets._NumericalLineEditHelper.__init__(self,
+                floating_point, minimum, maximum)
 
+@only_qt4
 class NumericalLineEditTest(QtTestCase):
     def test_construct(self):
         edit = self.__construct(True)
@@ -113,23 +121,27 @@ class NumericalLineEditTest(QtTestCase):
         self.assertRaises(ValueError, self.__construct, False, minimum=0.1)
         self.assertRaises(ValueError, self.__construct, False, maximum=0.1)
 
-    def __construct(self, floating_point, contents=QtCore.QString(),
+    def __construct(self, floating_point, contents=None,
         minimum=None, maximum=None):
+        if contents is None:
+            contents = QtCore.QString()
         edit = _NumericalLineEdit(floating_point=
                 floating_point, contents=contents, minimum=minimum, maximum=
                 maximum)
         return edit
 
-# Note that the helper must be inherited first, to override methods in the
-# Qt base
-class _CheckBox(srllib.qtgui.widgets._CheckBoxHelper, guimocks.QCheckBoxMock):
-    _qbase = guimocks.QCheckBoxMock
+if has_qt4:
+    # Note that the helper must be inherited first, to override methods in the
+    # Qt base
+    class _CheckBox(srllib.qtgui.widgets._CheckBoxHelper, guimocks.QCheckBoxMock):
+        _qbase = guimocks.QCheckBoxMock
 
-    def __init__(self, undo_stack=None, undo_text=None):
-        guimocks.QCheckBoxMock.__init__(self)
-        srllib.qtgui.widgets._CheckBoxHelper.__init__(self, undo_stack=
-            undo_stack, undo_text=undo_text)
+        def __init__(self, undo_stack=None, undo_text=None):
+            guimocks.QCheckBoxMock.__init__(self)
+            srllib.qtgui.widgets._CheckBoxHelper.__init__(self, undo_stack=
+                undo_stack, undo_text=undo_text)
 
+@only_qt4
 class CheckBoxHelperTest(QtTestCase):
     def test_construct_with_undo(self):
         """ Test constructing with undo. """

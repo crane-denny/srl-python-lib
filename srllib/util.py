@@ -4,13 +4,14 @@
 @var Os_Mac: Identifier for the Mac OS operating system.
 OsCollection_Posix: Collection of identifiers for POSIX OSes.
 """
-import stat, shutil, os.path, imp, platform, fnmatch, sys, errno, \
+import stat, shutil, os.path, imp, fnmatch, sys, errno, \
         codecs
 try: import hashlib
 except ImportError: import sha
 import functools
 
 from srllib.error import *
+from srllib._common import *
 
 class PermissionsError(SrlError):
     """ Filesystem permissions error.
@@ -88,48 +89,6 @@ def get_module(name, path):
         raise ValueError(name)
     return mod
 
-#{ Operating-system logic
-
-Os_Linux = "linux"
-Os_Windows = "windows"
-Os_Mac = "darwin"
-Os_Solaris = "sunos"
-
-OsCollection_Posix = (Os_Linux, Os_Mac, Os_Solaris)
-Os_Posix = OsCollection_Posix   # Backwards-compat
-
-def get_os():
-    """ Get the current operating system.
-
-    Lower-case strings are used to identify operating systems.
-    @return: A pair of OS identifier and OS release (e.g. "xp") strings.
-    """
-    name, host, rls, ver, mach, proc = platform.uname()
-    name = name.lower()
-    if name == "microsoft":
-        # On some Windows versions, it comes out on a different form than usual
-        name = rls.lower()
-        rls = ver
-
-    return name, rls
-
-def get_os_name():
-    """ Get the name of the current operating system.
-
-    This convenience function simply returns the first element of the tuple
-    returned by L{get_os}.
-    """
-    return get_os()[0]
-
-def get_os_version():
-    """ Get the version of the current operating system.
-
-    This convenience function simply returns the second element of the tuple
-    returned by L{get_os}.
-    """
-    return get_os()[1]
-
-#}
 
 #{ Filesystem utilities
 
@@ -201,23 +160,33 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
     @raise PermissionsError: Missing file-permissions.
     @raise DirNotEmpty: Directory was not empty, and recurse was not specified.
     """
+    logger.debug("Removing directory '%s' (ignore_errors: %s, force: %s, "
+        "recurse: %s)" % (path, ignore_errors, force, recurse))
+
     def rmdir(path):
         if force:
             # When in force mode, make the directory writeable if necessary
             mode = get_file_permissions(path)
             if not mode & stat.S_IWRITE:
+                logger.debug("Adding write permission to directory '%s'" %
+                        (path,))
                 mode |= stat.S_IWRITE
                 chmod(path, mode)
 
-        assert not os.listdir(path), os.listdir(path)
+        assert not os.listdir(path), "Directory not empty: '%s'" % (path,)
+        logger.debug("Removing directory '%s' itself" % (path,))
         try: os.rmdir(path)
         except OSError:
+            logger.debug("Failed to remove directory '%s'" % (path,))
             if not ignore_errors:
                 raise
 
     def handle_err(dpath):
+        """Hook for handling errors in walkdir."""
         if not force:
             raise PermissionsError(dpath)
+        logger.debug("Making directory '%s' traversable by adding exec and read permissions" %
+                (dpath,))
         os.chmod(dpath, stat.S_IEXEC | stat.S_IREAD)
         return True
 
@@ -227,11 +196,15 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
     if recurse:
         for dpath, dnames, fnames in walkdir(path, topdown=False, errorfunc=
                 handle_err):
+            logger.debug("In directory '%s', subdirectories: %r, child files: %r" %
+                    (dpath, dnames, fnames))
+
             if force:
                 # Make the directory writeable if necessary -- on Unix you
                 # can't delete children of read-only directories
                 mode = get_file_permissions(dpath)
                 if not mode & stat.S_IWRITE:
+                    logger.debug("Making directory '%s' writeable" % (dpath,))
                     mode |= stat.S_IWRITE
                     chmod(dpath, mode)
             
@@ -242,6 +215,7 @@ def remove_dir(path, ignore_errors=False, force=False, recurse=True):
                 else:
                     # Better to remove symlinks as files, since it doesn't
                     # matter if they're broken
+                    logger.debug("'%s' is a link" % (d,))
                     remove_file(abspath, force=force)
             for f in fnames:
                 remove_file(os.path.join(dpath, f), force=force)
@@ -377,10 +351,12 @@ def remove_file(path, force=False):
     @param force: Force deletion of read-only file?
     @raise PermissionsError: Missing file-permissions.
     """
+    logger.debug("Removing file '%s'" % (path,))
     if force:
         # Make the necessary file/directory writeable if it isn't already
         old_mode = get_file_permissions(path)
         if not old_mode & stat.S_IWRITE:
+            logger.debug("Adding write permission so file can be removed")
             chmod(path, old_mode | stat.S_IWRITE)
 
     os.remove(path)

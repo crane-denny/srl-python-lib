@@ -7,6 +7,7 @@ import os.path, struct, cPickle, sys, signal, traceback, subprocess, errno, \
 from srllib import threading, util
 from srllib._common import *
 from srllib.error import BusyError, SrlError
+from srllib.signal import Signal
          
 class ChildError(SrlError):
     """ Exception detected in child process.

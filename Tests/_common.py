@@ -1,4 +1,5 @@
-from srllib.util import get_os, get_os_name, get_os_version, Os_Linux, Os_Windows, OsCollection_Posix
+from srllib._common import (get_os, get_os_name, get_os_version, Os_Linux,
+        Os_Windows, Os_Mac, OsCollection_Posix)
 from srllib.testing import *
 
 
