@@ -1,3 +1,4 @@
+04.27.2011 - 0.5.3
     * Skip Qt4 tests if PyQt4 not installed
     * Start debug logging in srllib
 
