@@ -536,12 +536,15 @@ class FileSystemTest(TestCase):
 class VariousTest(TestCase):
     """ Test various functionality. """
     def test_get_checksum(self):
+        """Test get_checksum."""
         dir0, dir1 = self._get_tempdir(), self._get_tempdir()
         self.assertEqual(util.get_checksum(dir0), util.get_checksum(dir1))
-        fpath = util.create_file(os.path.join(dir1, "test"), "Test")
+        fpath = util.create_file(os.path.join(dir1, "test1"), "Test1")
+        fpath = util.create_file(os.path.join(dir1, "test2"), "Test2")
+
         chksum = util.get_checksum(dir1)
         self.assertNotEqual(util.get_checksum(dir0), chksum)
-        self.assertEqual(util.get_checksum(fpath), chksum)
+        self.assertEqual(chksum, "35bceb434ff8e69fb89b829e461c921a28b423b3")
 
     def test_get_checksum_cancel(self):
         """ Test canceling checksum calculation. """
@@ -558,8 +561,8 @@ class VariousTest(TestCase):
 
     def test_get_checksum_bin(self):
         """ Test binary checksum (20 bytes). """
-        self.assertEqual(len(util.get_checksum(self._get_tempfname(),
-                util.Checksum_Binary)), 20)
+        chksum = util.get_checksum(self._get_tempfname(), util.Checksum_Binary)
+        self.assertEqual(chksum, "\xda9\xa3\xee^kK\r2U\xbf\xef\x95`\x18\x90\xaf\xd8\x07\t")
 
     def test_get_checksum_carriage_return(self):
         """Test get_checksum on file with carriage return newline character."""
