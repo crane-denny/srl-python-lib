@@ -1,3 +1,6 @@
+05.16.2012 - 0.5.4
+    * srllib.util: Have get_checksum read files in binary mode
+
 04.27.2011 - 0.5.3
     * Skip Qt4 tests if PyQt4 not installed
     * Start debug logging in srllib
