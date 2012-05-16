@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """ Test the util module. """
 import os.path, stat, codecs
+import hashlib
 
 from srllib import util
 import srllib.error as _srlerror
@@ -516,15 +517,6 @@ class FileSystemTest(TestCase):
         self.assertEqual(util.clean_path(os.path.join("dir", "..", "file")),
                 os.path.join(os.path.abspath("file")))
 
-    def test_get_checksum_cancel(self):
-        """ Test canceling checksum calculation. """
-        def callback():
-            raise _srlerror.Canceled
-
-        path = util.create_file(self._get_tempfname(), "Test")
-        self.assertRaises(_srlerror.Canceled, util.get_checksum, path, callback=
-            callback)
-
     def __create_dir(self):
         """ Create directory with contents. """
         dpath = self._get_tempdir()
@@ -551,6 +543,15 @@ class VariousTest(TestCase):
         self.assertNotEqual(util.get_checksum(dir0), chksum)
         self.assertEqual(util.get_checksum(fpath), chksum)
 
+    def test_get_checksum_cancel(self):
+        """ Test canceling checksum calculation. """
+        def callback():
+            raise _srlerror.Canceled
+
+        path = util.create_file(self._get_tempfname(), "Test")
+        self.assertRaises(_srlerror.Canceled, util.get_checksum, path, callback=
+            callback)
+
     def test_get_checksum_invalid_format(self):
         """ Pass invalid format to get_checksum. """
         self.assertRaises(ValueError, util.get_checksum, "somepath", -1)
@@ -559,6 +560,13 @@ class VariousTest(TestCase):
         """ Test binary checksum (20 bytes). """
         self.assertEqual(len(util.get_checksum(self._get_tempfname(),
                 util.Checksum_Binary)), 20)
+
+    def test_get_checksum_carriage_return(self):
+        """Test get_checksum on file with carriage return newline character."""
+        text = "Test\r\n"
+        ref_hash = hashlib.sha1(text).hexdigest()
+        path = util.create_file(self._get_tempfname(), text, binary=True)
+        self.assertEqual(util.get_checksum(path), ref_hash)
 
     def test_get_module(self):
         """ Test the get_module function. """

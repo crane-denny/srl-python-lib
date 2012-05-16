@@ -46,7 +46,7 @@ def get_checksum(path, format=Checksum_Hex, callback=no_op):
         raise ValueError("Invalid format")
 
     def performSha1(path, shaObj):
-        f = file(path)
+        f = open(path, "rb")
         try:
             while True:
                 callback()
