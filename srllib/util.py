@@ -65,7 +65,7 @@ def get_checksum(path, format=Checksum_Hex, callback=no_op):
         shaMthd = shaObj.digest
 
     if os.path.isdir(path):
-        for dpath, dnames, fnames in walkdir(path):
+        for dpath, dnames, fnames in walkdir(path, sort=True):
             for fname in fnames:
                 performSha1(os.path.join(dpath, fname), shaObj)
     else:
