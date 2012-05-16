@@ -539,12 +539,11 @@ class VariousTest(TestCase):
         """Test get_checksum."""
         dir0, dir1 = self._get_tempdir(), self._get_tempdir()
         self.assertEqual(util.get_checksum(dir0), util.get_checksum(dir1))
-        fpath = util.create_file(os.path.join(dir1, "test1"), "Test1")
-        fpath = util.create_file(os.path.join(dir1, "test2"), "Test2")
+        util.create_file(os.path.join(dir1, "test1"), "Test1")
 
         chksum = util.get_checksum(dir1)
         self.assertNotEqual(util.get_checksum(dir0), chksum)
-        self.assertEqual(chksum, "35bceb434ff8e69fb89b829e461c921a28b423b3")
+        self.assertEqual(chksum, "99ea7bf70f6e69ad71659995677b43f8a8312025")
 
     def test_get_checksum_cancel(self):
         """ Test canceling checksum calculation. """
@@ -570,6 +569,21 @@ class VariousTest(TestCase):
         ref_hash = hashlib.sha1(text).hexdigest()
         path = util.create_file(self._get_tempfname(), text, binary=True)
         self.assertEqual(util.get_checksum(path), ref_hash)
+
+    def test_get_checksum_filename_order(self):
+        """Verify that get_checksum isn't affected by filename order returned by os.listdir."""
+        def fake_listdir(dpath):
+            return reversed(orig_listdir(dpath))
+
+        orig_listdir = os.listdir
+        self._set_attr(os, "listdir", fake_listdir)
+        dir0, dir1 = self._get_tempdir(), self._get_tempdir()
+        util.create_file(os.path.join(dir1, "test1"), "Test1")
+        util.create_file(os.path.join(dir1, "test2"), "Test2")
+
+        chksum = util.get_checksum(dir1)
+        self.assertEqual(chksum, "35bceb434ff8e69fb89b829e461c921a28b423b3")
+    
 
     def test_get_module(self):
         """ Test the get_module function. """
