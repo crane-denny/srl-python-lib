@@ -769,7 +769,7 @@ def resolve_path(executable):
     path = os.environ.get("PATH", "").split(os.pathsep)
     if get_os_name() == Os_Windows:
         # PATHEXTS tells us which extensions an executable may have
-        path_exts = os.environ.get("PATHEXTS", ".exe;.bat").split(";")
+        path_exts = os.environ.get("PATHEXTS", ".exe;.bat;.cmd").split(";")
         has_ext = os.path.splitext(executable)[1] in path_exts
         if not has_ext:
             exts = path_exts
